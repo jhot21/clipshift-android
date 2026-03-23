@@ -31,5 +31,13 @@
             android:name=".SettingsActivity"
             android:exported="false" />
 
+        <receiver
+            android:name=".NtfyReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="io.heckel.ntfy.MESSAGE_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
