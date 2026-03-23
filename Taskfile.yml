@@ -1,0 +1,43 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build debug APK
+    cmds:
+      - ./gradlew assembleDebug
+
+  test:
+    desc: Run JVM unit tests
+    cmds:
+      - ./gradlew test
+
+  test:android:
+    desc: Run instrumented tests (requires connected device or emulator)
+    cmds:
+      - ./gradlew connectedAndroidTest
+
+  install:
+    desc: Build and install debug APK on connected device
+    cmds:
+      - ./gradlew installDebug
+
+  check:
+    desc: Run lint and unit tests
+    cmds:
+      - ./gradlew lint test
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - ./gradlew clean
+
+  icons:
+    desc: Generate Android mipmap icons from desktop source icon
+    vars:
+      SRC: ../rust/clipshift-desktop/src-tauri/icons/icon.png
+    cmds:
+      - sips -z 48 48 {{.SRC}} --out app/src/main/res/mipmap-mdpi/ic_launcher.png
+      - sips -z 72 72 {{.SRC}} --out app/src/main/res/mipmap-hdpi/ic_launcher.png
+      - sips -z 96 96 {{.SRC}} --out app/src/main/res/mipmap-xhdpi/ic_launcher.png
+      - sips -z 144 144 {{.SRC}} --out app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+      - sips -z 192 192 {{.SRC}} --out app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
