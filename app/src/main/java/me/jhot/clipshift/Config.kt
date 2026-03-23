@@ -18,6 +18,7 @@ private const val KEY_DEVICE_NAME = "device_name"
 private const val KEY_TOPIC = "topic"
 private const val KEY_ENCRYPTION_ENABLED = "encryption_enabled"
 private const val KEY_PAUSED = "paused"
+private const val KEY_PASSPHRASE = "passphrase"
 
 object Config {
     fun load(context: Context): AppConfig {
@@ -58,13 +59,13 @@ object Config {
     }
 
     fun loadPassphrase(context: Context): String? =
-        EncryptedPrefs.get(context, "passphrase")
+        EncryptedPrefs.get(context, KEY_PASSPHRASE)
 
     fun savePassphrase(context: Context, passphrase: String?) {
         if (passphrase == null) {
-            EncryptedPrefs.remove(context, "passphrase")
+            EncryptedPrefs.remove(context, KEY_PASSPHRASE)
         } else {
-            EncryptedPrefs.put(context, "passphrase", passphrase)
+            EncryptedPrefs.put(context, KEY_PASSPHRASE, passphrase)
         }
     }
 }

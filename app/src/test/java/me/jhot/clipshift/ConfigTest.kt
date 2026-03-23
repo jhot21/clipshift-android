@@ -3,6 +3,7 @@ package me.jhot.clipshift
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,12 @@ class ConfigTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+    }
+
+    @After
+    fun tearDown() {
+        context.getSharedPreferences("clipshift_prefs", Context.MODE_PRIVATE)
+            .edit().clear().commit()
     }
 
     @Test
