@@ -71,6 +71,8 @@ private fun SettingsScreen() {
     var deviceName by rememberSaveable { mutableStateOf(cfg.deviceName) }
     var topic by rememberSaveable { mutableStateOf(cfg.topic) }
     var baseUrl by rememberSaveable { mutableStateOf(cfg.baseUrl) }
+    // Intentionally remember (not rememberSaveable) — passphrase must not be written
+    // into the saved instance state bundle. On rotation it re-reads from EncryptedPrefs.
     var passphrase by remember {
         mutableStateOf(if (cfg.encryptionEnabled) Config.loadPassphrase(context) ?: "" else "")
     }
