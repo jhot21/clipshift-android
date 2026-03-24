@@ -9,13 +9,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -33,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +54,7 @@ private const val TOPIC_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTU
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             ClipShiftTheme {
                 SettingsScreen()
@@ -59,21 +64,21 @@ class SettingsActivity : ComponentActivity() {
 }
 
 @Composable
-fun SettingsScreen() {
+private fun SettingsScreen() {
     val context = LocalContext.current
     val cfg = remember { Config.load(context) }
 
-    var deviceName by remember { mutableStateOf(cfg.deviceName) }
-    var topic by remember { mutableStateOf(cfg.topic) }
-    var baseUrl by remember { mutableStateOf(cfg.baseUrl) }
+    var deviceName by rememberSaveable { mutableStateOf(cfg.deviceName) }
+    var topic by rememberSaveable { mutableStateOf(cfg.topic) }
+    var baseUrl by rememberSaveable { mutableStateOf(cfg.baseUrl) }
     var passphrase by remember {
         mutableStateOf(if (cfg.encryptionEnabled) Config.loadPassphrase(context) ?: "" else "")
     }
-    var encryptionEnabled by remember { mutableStateOf(cfg.encryptionEnabled) }
-    var showTopicError by remember { mutableStateOf(false) }
-    var showPassphraseError by remember { mutableStateOf(false) }
-    var showBanner by remember { mutableStateOf(cfg.topic.isBlank()) }
-    var showPermissionWarning by remember { mutableStateOf(false) }
+    var encryptionEnabled by rememberSaveable { mutableStateOf(cfg.encryptionEnabled) }
+    var showTopicError by rememberSaveable { mutableStateOf(false) }
+    var showPassphraseError by rememberSaveable { mutableStateOf(false) }
+    var showBanner by rememberSaveable { mutableStateOf(cfg.topic.isBlank()) }
+    var showPermissionWarning by rememberSaveable { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -91,6 +96,7 @@ fun SettingsScreen() {
     ) { innerPadding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
                 .padding(16.dp)
@@ -101,10 +107,10 @@ fun SettingsScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(12.dp)
-                        .padding(bottom = 16.dp),
+                        .padding(12.dp),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (showPermissionWarning) {
