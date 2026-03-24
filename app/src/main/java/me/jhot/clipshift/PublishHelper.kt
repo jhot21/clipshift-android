@@ -32,6 +32,7 @@ object PublishHelper {
             putExtra("message", content)
             putExtra("tags", tags)
             putExtra("priority", 3)
+            putExtra("baseUrl", cfg.baseUrl)
         }
         context.sendBroadcast(intent)
     }

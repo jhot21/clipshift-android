@@ -58,6 +58,20 @@ class PublishHelperTest {
     }
 
     @Test
+    fun `send intent includes baseUrl extra`() {
+        shadowPackageManager.addResolveInfoForIntent(
+            Intent("io.heckel.ntfy.SEND_MESSAGE"), ResolveInfo()
+        )
+        Config.save(context, topic = "test-topic", deviceName = "Test Device",
+            encryptionEnabled = false, paused = false, baseUrl = "https://my.server.com")
+        val shadows = Shadows.shadowOf(context as Application)
+        PublishHelper.publish("hello", context)
+
+        val broadcast = shadows.broadcastIntents.lastOrNull()
+        assertThat(broadcast?.getStringExtra("baseUrl")).isEqualTo("https://my.server.com")
+    }
+
+    @Test
     fun `tags contain required metadata fields`() {
         shadowPackageManager.addResolveInfoForIntent(
             Intent("io.heckel.ntfy.SEND_MESSAGE"), ResolveInfo()
