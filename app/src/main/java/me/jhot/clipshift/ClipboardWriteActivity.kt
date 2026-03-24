@@ -14,7 +14,7 @@ class ClipboardWriteActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         text = intent.getStringExtra(Intent.EXTRA_TEXT)
-        if (text == null) finish()
+        if (text == null) { done = true; finish(); return }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
