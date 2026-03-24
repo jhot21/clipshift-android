@@ -13,7 +13,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config as RobolectricConfig
 import org.robolectric.shadows.ShadowPackageManager
-import android.content.pm.ResolveInfo
+import android.content.pm.PackageInfo
+import org.robolectric.shadows.ShadowToast
 
 @RunWith(RobolectricTestRunner::class)
 @RobolectricConfig(sdk = [34])
@@ -38,9 +39,7 @@ class PublishHelperTest {
 
     @Test
     fun `sends broadcast when ntfy is installed`() {
-        shadowPackageManager.addResolveInfoForIntent(
-            Intent("io.heckel.ntfy.SEND_MESSAGE"), ResolveInfo()
-        )
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
         val shadows = Shadows.shadowOf(context as Application)
         PublishHelper.publish("hello", context)
 
@@ -55,13 +54,13 @@ class PublishHelperTest {
         val shadows = Shadows.shadowOf(context as Application)
         PublishHelper.publish("hello", context)
         assertThat(shadows.broadcastIntents).isEmpty()
+        assertThat(ShadowToast.getTextOfLatestToast())
+            .isEqualTo(context.getString(R.string.toast_ntfy_not_installed))
     }
 
     @Test
     fun `send intent includes baseUrl extra`() {
-        shadowPackageManager.addResolveInfoForIntent(
-            Intent("io.heckel.ntfy.SEND_MESSAGE"), ResolveInfo()
-        )
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
         Config.save(context, topic = "test-topic", deviceName = "Test Device",
             encryptionEnabled = false, paused = false, baseUrl = "https://my.server.com")
         val shadows = Shadows.shadowOf(context as Application)
@@ -73,9 +72,7 @@ class PublishHelperTest {
 
     @Test
     fun `tags contain required metadata fields`() {
-        shadowPackageManager.addResolveInfoForIntent(
-            Intent("io.heckel.ntfy.SEND_MESSAGE"), ResolveInfo()
-        )
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
         val shadows = Shadows.shadowOf(context as Application)
         PublishHelper.publish("hello", context)
 

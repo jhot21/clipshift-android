@@ -2,6 +2,8 @@ package me.jhot.clipshift
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.widget.Toast
 
 object PublishHelper {
 
@@ -9,10 +11,14 @@ object PublishHelper {
         val cfg = Config.load(context)
         if (cfg.topic.isBlank()) return
 
-        val ntfyPresent = context.packageManager
-            .queryBroadcastReceivers(Intent("io.heckel.ntfy.SEND_MESSAGE"), 0)
-            .isNotEmpty()
-        if (!ntfyPresent) return
+        val ntfyPresent = try {
+            context.packageManager.getPackageInfo("io.heckel.ntfy", 0)
+            true
+        } catch (e: PackageManager.NameNotFoundException) { false }
+        if (!ntfyPresent) {
+            Toast.makeText(context, R.string.toast_ntfy_not_installed, Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val (content, encrypted) = if (cfg.encryptionEnabled) {
             val passphrase = Config.loadPassphrase(context) ?: return

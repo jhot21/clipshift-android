@@ -7,9 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <queries>
-        <intent>
-            <action android:name="io.heckel.ntfy.SEND_MESSAGE" />
-        </intent>
+        <package android:name="io.heckel.ntfy" />
     </queries>
 
     <application
