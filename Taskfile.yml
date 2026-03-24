@@ -13,7 +13,7 @@ tasks:
       - ./gradlew assembleDebug
 
   build:release:
-    desc: Build debug APK
+    desc: Build signed release APK
     cmds:
       - ./gradlew assembleRelease
       - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
@@ -24,7 +24,7 @@ tasks:
     cmds:
       - ./gradlew assembleRelease
       - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
-      - '{{ .SDK_PATH }}/apksigner sign --ks "$KEYSTORE_PATH" --ks-pass "pass:$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass "pass:$KEY_PASSWORD" --out app/build/outputs/apk/release/clipshift.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
+      - '{{ .SDK_PATH }}/apksigner sign --verbose --ks "$KEYSTORE_PATH" --ks-pass env:KEYSTORE_PASSWORD --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASSWORD --in app/build/outputs/apk/release/clipshift-release-unsigned.apk --out app/build/outputs/apk/release/clipshift.apk'
 
   test:
     desc: Run JVM unit tests
