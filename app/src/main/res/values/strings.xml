@@ -25,4 +25,5 @@
     <string name="notification_received_from">Last received from %1$s at %2$s</string>
     <string name="notification_error_passphrase">Error: check passphrase</string>
     <string name="permission_notification_denied">Notification permission denied — Send Clipboard action will be unavailable. Grant it in system settings.</string>
+    <string name="hint_base_url">https://ntfy.sh</string>
 </resources>

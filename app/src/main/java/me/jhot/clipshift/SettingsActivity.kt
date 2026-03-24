@@ -51,6 +51,7 @@ class SettingsActivity : AppCompatActivity() {
                 findViewById<TextInputEditText>(R.id.passphraseInput).setText(it)
             }
         }
+        findViewById<TextInputEditText>(R.id.baseUrlInput).setText(cfg.baseUrl)
 
         // Show onboarding banner if no topic
         if (cfg.topic.isBlank()) {
@@ -75,7 +76,11 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.subscribeBtn).setOnClickListener {
             val topic = findViewById<TextInputEditText>(R.id.topicInput).text?.toString().orEmpty()
             if (topic.isNotBlank()) {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("io.heckel.ntfy://subscribe/$topic")))
+                val baseUrlForSubscribe = Uri.encode(
+                    findViewById<TextInputEditText>(R.id.baseUrlInput).text?.toString().orEmpty().trim().trimEnd('/').ifBlank { "https://ntfy.sh" }
+                )
+                startActivity(Intent(Intent.ACTION_VIEW,
+                    Uri.parse("io.heckel.ntfy://subscribe/$topic?baseUrl=$baseUrlForSubscribe")))
             }
         }
 
@@ -91,6 +96,7 @@ class SettingsActivity : AppCompatActivity() {
         val deviceName = findViewById<TextInputEditText>(R.id.deviceNameInput).text?.toString().orEmpty().trim()
         val encryptionEnabled = findViewById<SwitchMaterial>(R.id.encryptionToggle).isChecked
         val passphrase = findViewById<TextInputEditText>(R.id.passphraseInput).text?.toString().orEmpty()
+        val baseUrl = findViewById<TextInputEditText>(R.id.baseUrlInput).text?.toString().orEmpty().trim()
 
         var valid = true
 
@@ -110,7 +116,6 @@ class SettingsActivity : AppCompatActivity() {
 
         if (!valid) return
 
-        val baseUrl = Config.load(this).baseUrl
         Config.save(this, topic = topic, deviceName = deviceName,
             encryptionEnabled = encryptionEnabled, paused = false, baseUrl = baseUrl)
         if (encryptionEnabled) Config.savePassphrase(this, passphrase)
