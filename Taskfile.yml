@@ -19,6 +19,13 @@ tasks:
       - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
       - '{{ .SDK_PATH }}/apksigner sign --ks clipshift-release-key.jks --out app/build/outputs/apk/release/clipshift.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
 
+  build:release:ci:
+    desc: Build signed release APK for CI (reads signing config from env vars)
+    cmds:
+      - ./gradlew assembleRelease
+      - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
+      - '{{ .SDK_PATH }}/apksigner sign --ks "$KEYSTORE_PATH" --ks-pass "pass:$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass "pass:$KEY_PASSWORD" --out app/build/outputs/apk/release/clipshift.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
+
   test:
     desc: Run JVM unit tests
     cmds:
