@@ -20,6 +20,10 @@ class NtfyReceiver : BroadcastReceiver() {
         val msgTopic = intent.getStringExtra("topic") ?: return
         if (msgTopic != cfg.topic) return
 
+        // Base URL must match (fail-open when absent)
+        val msgBaseUrl = intent.getStringExtra("baseUrl")
+        if (msgBaseUrl != null && msgBaseUrl != cfg.baseUrl) return
+
         // 3. Parse tags
         val tagString = intent.getStringExtra("tags") ?: ""
         val tags = TagParser.parse(tagString)

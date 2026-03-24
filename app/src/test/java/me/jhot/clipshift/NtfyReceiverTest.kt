@@ -37,12 +37,14 @@ class NtfyReceiverTest {
         topic: String = "test-topic",
         title: String = "Desktop",
         message: String = "synced text",
-        tags: String = "v:1,did:other-device-uuid,type:text,ts:0"
+        tags: String = "v:1,did:other-device-uuid,type:text,ts:0",
+        baseUrl: String? = null,
     ): Intent = Intent("io.heckel.ntfy.MESSAGE_RECEIVED").apply {
         putExtra("topic", topic)
         putExtra("title", title)
         putExtra("message", message)
         putExtra("tags", tags)
+        if (baseUrl != null) putExtra("baseUrl", baseUrl)
     }
 
     @Test
@@ -112,5 +114,28 @@ class NtfyReceiverTest {
 
         val clipboard = context.getSystemService(ClipboardManager::class.java)
         assertThat(clipboard.primaryClip?.getItemAt(0)?.text?.toString()).isNotEqualTo("image content")
+    }
+
+    @Test
+    fun `skips message with mismatched baseUrl`() {
+        val intent = makeIntent(
+            message = "wrong server",
+            baseUrl = "https://other.server.com"
+        )
+        NtfyReceiver().onReceive(context, intent)
+
+        val clipboard = context.getSystemService(ClipboardManager::class.java)
+        assertThat(clipboard.primaryClip?.getItemAt(0)?.text?.toString())
+            .isNotEqualTo("wrong server")
+    }
+
+    @Test
+    fun `allows message with no baseUrl extra (older ntfy)`() {
+        val intent = makeIntent(message = "no base url")
+        NtfyReceiver().onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notifications = shadowOf(nm).allNotifications
+        assertThat(notifications).isNotEmpty()
     }
 }
