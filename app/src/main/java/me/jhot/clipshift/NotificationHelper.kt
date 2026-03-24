@@ -24,13 +24,14 @@ object NotificationHelper {
             .createNotificationChannel(channel)
     }
 
-    fun build(context: Context, statusText: String): Notification {
+    fun build(context: Context, statusText: String, pendingClipText: String? = null): Notification {
         val cfg = Config.load(context)
         val paused = cfg.paused
 
         val settingsIntent = PendingIntent.getActivity(
             context, 0,
-            Intent(context, SettingsActivity::class.java),
+            Intent(context, SettingsActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
@@ -48,7 +49,7 @@ object NotificationHelper {
 
         val pauseLabel = if (paused) R.string.action_resume else R.string.action_pause
 
-        return NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_share)
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(statusText)
@@ -57,11 +58,22 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .addAction(0, context.getString(pauseLabel), pauseIntent)
             .addAction(0, context.getString(R.string.action_send_clipboard), sendIntent)
-            .build()
+
+        if (pendingClipText != null) {
+            val writeClipIntent = PendingIntent.getActivity(
+                context, 3,
+                Intent(context, ClipboardWriteActivity::class.java)
+                    .putExtra(Intent.EXTRA_TEXT, pendingClipText),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            builder.addAction(0, context.getString(R.string.action_set_clipboard), writeClipIntent)
+        }
+
+        return builder.build()
     }
 
-    fun update(context: Context, statusText: String) {
+    fun update(context: Context, statusText: String, pendingClipText: String? = null) {
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.notify(NOTIFICATION_ID, build(context, statusText))
+        nm.notify(NOTIFICATION_ID, build(context, statusText, pendingClipText))
     }
 }
