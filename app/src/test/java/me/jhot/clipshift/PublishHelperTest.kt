@@ -27,7 +27,7 @@ class PublishHelperTest {
         context = ApplicationProvider.getApplicationContext()
         shadowPackageManager = Shadows.shadowOf(context.packageManager)
         Config.save(context, topic = "test-topic", deviceName = "Test Device",
-            encryptionEnabled = false, paused = false)
+            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
     }
 
     @After

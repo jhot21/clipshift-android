@@ -47,7 +47,7 @@ class ConfigTest {
     @Test
     fun `save and reload round-trips all fields`() {
         Config.save(context, topic = "clipshift-abc123", deviceName = "Pixel 8",
-            encryptionEnabled = false, paused = false)
+            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
         val config = Config.load(context)
         assertThat(config.topic).isEqualTo("clipshift-abc123")
         assertThat(config.deviceName).isEqualTo("Pixel 8")
@@ -59,5 +59,39 @@ class ConfigTest {
         assertThat(Config.load(context).paused).isTrue()
         Config.setPaused(context, false)
         assertThat(Config.load(context).paused).isFalse()
+    }
+
+    @Test
+    fun `baseUrl defaults to https ntfy sh when not saved`() {
+        val config = Config.load(context)
+        assertThat(config.baseUrl).isEqualTo("https://ntfy.sh")
+    }
+
+    @Test
+    fun `baseUrl round-trips through save and load`() {
+        Config.save(context, topic = "t", deviceName = "d",
+            encryptionEnabled = false, paused = false, baseUrl = "https://my.server.com")
+        assertThat(Config.load(context).baseUrl).isEqualTo("https://my.server.com")
+    }
+
+    @Test
+    fun `baseUrl trailing slash is stripped on save`() {
+        Config.save(context, topic = "t", deviceName = "d",
+            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh/")
+        assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
+    }
+
+    @Test
+    fun `baseUrl multiple trailing slashes are stripped on save`() {
+        Config.save(context, topic = "t", deviceName = "d",
+            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh///")
+        assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
+    }
+
+    @Test
+    fun `baseUrl blank value falls back to https ntfy sh`() {
+        Config.save(context, topic = "t", deviceName = "d",
+            encryptionEnabled = false, paused = false, baseUrl = "   ")
+        assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
     }
 }

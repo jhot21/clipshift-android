@@ -24,7 +24,7 @@ class NtfyReceiverTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         Config.save(context, topic = "test-topic", deviceName = "Android",
-            encryptionEnabled = false, paused = false)
+            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
     }
 
     @After
