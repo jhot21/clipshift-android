@@ -1,130 +1,263 @@
 package me.jhot.clipshift
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.switchmaterial.SwitchMaterial
-import com.google.android.material.textfield.TextInputEditText
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import me.jhot.clipshift.ui.theme.ClipShiftTheme
 import java.security.SecureRandom
 
 private val TOPIC_REGEX = Regex("^[a-zA-Z0-9_-]{1,64}$")
 private const val TOPIC_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-class SettingsActivity : AppCompatActivity() {
-
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            findViewById<View>(R.id.notificationPermissionWarning).visibility =
-                if (granted) View.GONE else View.VISIBLE
-            startServiceIfTopicSet()
-        }
-
+class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_settings)
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.scrollView)) { view, insets ->
-            val top = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top
-            view.setPadding(view.paddingLeft, top, view.paddingRight, view.paddingBottom)
-            insets
-        }
-
-        val cfg = Config.load(this)
-
-        // Pre-populate fields
-        findViewById<TextInputEditText>(R.id.deviceNameInput).setText(cfg.deviceName)
-        findViewById<TextInputEditText>(R.id.topicInput).setText(cfg.topic)
-        val encryptionToggle = findViewById<SwitchMaterial>(R.id.encryptionToggle)
-        encryptionToggle.isChecked = cfg.encryptionEnabled
-        if (cfg.encryptionEnabled) {
-            Config.loadPassphrase(this)?.let {
-                findViewById<TextInputEditText>(R.id.passphraseInput).setText(it)
+        setContent {
+            ClipShiftTheme {
+                SettingsScreen()
             }
         }
-        findViewById<TextInputEditText>(R.id.baseUrlInput).setText(cfg.baseUrl)
+    }
+}
 
-        // Show onboarding banner if no topic
-        if (cfg.topic.isBlank()) {
-            findViewById<View>(R.id.bannerText).visibility = View.VISIBLE
-        }
+@Composable
+fun SettingsScreen() {
+    val context = LocalContext.current
+    val cfg = remember { Config.load(context) }
 
-        // Passphrase visibility tied to toggle
-        val passphraseLayout = findViewById<View>(R.id.passphraseLayout)
-        passphraseLayout.visibility = if (cfg.encryptionEnabled) View.VISIBLE else View.GONE
-        encryptionToggle.setOnCheckedChangeListener { _, checked ->
-            passphraseLayout.visibility = if (checked) View.VISIBLE else View.GONE
-        }
+    var deviceName by remember { mutableStateOf(cfg.deviceName) }
+    var topic by remember { mutableStateOf(cfg.topic) }
+    var baseUrl by remember { mutableStateOf(cfg.baseUrl) }
+    var passphrase by remember {
+        mutableStateOf(if (cfg.encryptionEnabled) Config.loadPassphrase(context) ?: "" else "")
+    }
+    var encryptionEnabled by remember { mutableStateOf(cfg.encryptionEnabled) }
+    var showTopicError by remember { mutableStateOf(false) }
+    var showPassphraseError by remember { mutableStateOf(false) }
+    var showBanner by remember { mutableStateOf(cfg.topic.isBlank()) }
+    var showPermissionWarning by remember { mutableStateOf(false) }
 
-        // Generate button
-        findViewById<MaterialButton>(R.id.generateBtn).setOnClickListener {
-            val rng = SecureRandom()
-            val suffix = (1..16).map { TOPIC_CHARS[rng.nextInt(TOPIC_CHARS.length)] }.joinToString("")
-            findViewById<TextInputEditText>(R.id.topicInput).setText("clipshift-$suffix")
-        }
-
-        // Save button
-        findViewById<MaterialButton>(R.id.saveBtn).setOnClickListener { onSave() }
-
-        // Restart service if topic is already set
-        startServiceIfTopicSet()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        showPermissionWarning = !granted
+        startServiceIfTopicSet(context)
     }
 
-    private fun onSave() {
-        val topic = findViewById<TextInputEditText>(R.id.topicInput).text?.toString().orEmpty().trim()
-        val deviceName = findViewById<TextInputEditText>(R.id.deviceNameInput).text?.toString().orEmpty().trim()
-        val encryptionEnabled = findViewById<SwitchMaterial>(R.id.encryptionToggle).isChecked
-        val passphrase = findViewById<TextInputEditText>(R.id.passphraseInput).text?.toString().orEmpty()
-        val baseUrl = findViewById<TextInputEditText>(R.id.baseUrlInput).text?.toString().orEmpty().trim()
+    LaunchedEffect(Unit) {
+        startServiceIfTopicSet(context)
+    }
 
-        var valid = true
-
-        if (!TOPIC_REGEX.matches(topic)) {
-            findViewById<View>(R.id.topicError).visibility = View.VISIBLE
-            valid = false
-        } else {
-            findViewById<View>(R.id.topicError).visibility = View.GONE
-        }
-
-        if (encryptionEnabled && passphrase.isBlank()) {
-            findViewById<View>(R.id.passphraseError).visibility = View.VISIBLE
-            valid = false
-        } else {
-            findViewById<View>(R.id.passphraseError).visibility = View.GONE
-        }
-
-        if (!valid) return
-
-        Config.save(this, topic = topic, deviceName = deviceName,
-            encryptionEnabled = encryptionEnabled, baseUrl = baseUrl)
-        if (encryptionEnabled) Config.savePassphrase(this, passphrase)
-        else Config.savePassphrase(this, null)
-
-        // Hide onboarding banner
-        findViewById<View>(R.id.bannerText).visibility = View.GONE
-
-        // Request notification permission on API 33+, then start service
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    Scaffold(
+        modifier = Modifier.imePadding()
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
-            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            startServiceIfTopicSet()
+            if (showBanner) {
+                Text(
+                    text = stringResource(R.string.onboarding_banner),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(12.dp)
+                        .padding(bottom = 16.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+
+            if (showPermissionWarning) {
+                Text(
+                    text = stringResource(R.string.permission_notification_denied),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                )
+            }
+
+            OutlinedTextField(
+                value = deviceName,
+                onValueChange = { deviceName = it },
+                label = { Text(stringResource(R.string.label_device_name)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+            )
+
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it },
+                label = { Text(stringResource(R.string.hint_base_url)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = { topic = it },
+                    label = { Text(stringResource(R.string.label_topic)) },
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        val rng = SecureRandom()
+                        val suffix = (1..16).map { TOPIC_CHARS[rng.nextInt(TOPIC_CHARS.length)] }.joinToString("")
+                        topic = "clipshift-$suffix"
+                    }
+                ) {
+                    Text(stringResource(R.string.btn_generate))
+                }
+            }
+
+            if (showTopicError) {
+                Text(
+                    text = stringResource(R.string.error_topic_invalid),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.label_encryption),
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = encryptionEnabled,
+                    onCheckedChange = { encryptionEnabled = it },
+                )
+            }
+
+            AnimatedVisibility(visible = encryptionEnabled) {
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text(stringResource(R.string.label_passphrase)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                )
+            }
+
+            if (showPassphraseError) {
+                Text(
+                    text = stringResource(R.string.error_passphrase_required),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+
+            Button(
+                onClick = {
+                    val trimmedTopic = topic.trim()
+                    val trimmedDeviceName = deviceName.trim()
+                    val trimmedBaseUrl = baseUrl.trim()
+
+                    var valid = true
+                    if (!TOPIC_REGEX.matches(trimmedTopic)) {
+                        showTopicError = true
+                        valid = false
+                    } else {
+                        showTopicError = false
+                    }
+                    if (encryptionEnabled && passphrase.isBlank()) {
+                        showPassphraseError = true
+                        valid = false
+                    } else {
+                        showPassphraseError = false
+                    }
+                    if (!valid) return@Button
+
+                    Config.save(
+                        context,
+                        topic = trimmedTopic,
+                        deviceName = trimmedDeviceName,
+                        encryptionEnabled = encryptionEnabled,
+                        baseUrl = trimmedBaseUrl,
+                    )
+                    if (encryptionEnabled) Config.savePassphrase(context, passphrase)
+                    else Config.savePassphrase(context, null)
+
+                    showBanner = false
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        startServiceIfTopicSet(context)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+            ) {
+                Text(stringResource(R.string.btn_save))
+            }
         }
     }
+}
 
-    private fun startServiceIfTopicSet() {
-        val cfg = Config.load(this)
-        if (cfg.topic.isNotBlank()) {
-            startForegroundService(Intent(this, ClipShiftService::class.java))
-        }
+private fun startServiceIfTopicSet(context: Context) {
+    if (Config.load(context).topic.isNotBlank()) {
+        context.startForegroundService(Intent(context, ClipShiftService::class.java))
     }
 }
