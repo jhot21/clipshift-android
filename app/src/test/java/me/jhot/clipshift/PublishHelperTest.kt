@@ -67,7 +67,7 @@ class PublishHelperTest {
         PublishHelper.publish("hello", context)
 
         val broadcast = shadows.broadcastIntents.lastOrNull()
-        assertThat(broadcast?.getStringExtra("baseUrl")).isEqualTo("https://my.server.com")
+        assertThat(broadcast?.getStringExtra("base_url")).isEqualTo("https://my.server.com")
     }
 
     @Test
