@@ -7,6 +7,7 @@
     <string name="action_resume">Resume</string>
     <string name="action_send_clipboard">Send Clipboard</string>
     <string name="action_set_clipboard">Set Clipboard</string>
+    <string name="toast_topic_not_configured">No topic configured — open Settings</string>
     <string name="toast_ntfy_not_installed">ntfy app not installed</string>
     <string name="toast_text_only">Only text is supported currently</string>
     <string name="toast_too_long">Clipboard contents too long</string>
@@ -16,9 +17,9 @@
     <string name="label_topic">Topic</string>
     <string name="label_encryption">Encryption</string>
     <string name="label_passphrase">Passphrase</string>
+    <string name="toast_sent">ClipSHIFT: Sent</string>
     <string name="btn_save">Save</string>
     <string name="btn_generate">Generate</string>
-    <string name="btn_subscribe">Subscribe in ntfy</string>
     <string name="error_topic_invalid">Topic must be 1–64 characters: letters, numbers, hyphens, underscores</string>
     <string name="error_passphrase_required">Passphrase required when encryption is enabled</string>
     <string name="onboarding_banner">Set your topic to get started</string>

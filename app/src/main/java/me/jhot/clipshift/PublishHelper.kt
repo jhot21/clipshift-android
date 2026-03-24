@@ -9,7 +9,10 @@ object PublishHelper {
 
     fun publish(text: String, context: Context) {
         val cfg = Config.load(context)
-        if (cfg.topic.isBlank()) return
+        if (cfg.topic.isBlank()) {
+            Toast.makeText(context, R.string.toast_topic_not_configured, Toast.LENGTH_SHORT).show()
+            return
+        }
 
         val ntfyPresent = try {
             context.packageManager.getPackageInfo("io.heckel.ntfy", 0)
@@ -33,13 +36,15 @@ object PublishHelper {
         }
 
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
+            setPackage("io.heckel.ntfy")
             putExtra("topic", cfg.topic)
             putExtra("title", cfg.deviceName)
             putExtra("message", content)
             putExtra("tags", tags)
             putExtra("priority", 3)
-            putExtra("baseUrl", cfg.baseUrl)
+            putExtra("base_url", cfg.baseUrl)
         }
         context.sendBroadcast(intent)
+        Toast.makeText(context, R.string.toast_sent, Toast.LENGTH_SHORT).show()
     }
 }

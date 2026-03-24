@@ -3,7 +3,6 @@ package me.jhot.clipshift
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -70,18 +69,6 @@ class SettingsActivity : AppCompatActivity() {
             val rng = SecureRandom()
             val suffix = (1..16).map { TOPIC_CHARS[rng.nextInt(TOPIC_CHARS.length)] }.joinToString("")
             findViewById<TextInputEditText>(R.id.topicInput).setText("clipshift-$suffix")
-        }
-
-        // Subscribe button
-        findViewById<MaterialButton>(R.id.subscribeBtn).setOnClickListener {
-            val topic = findViewById<TextInputEditText>(R.id.topicInput).text?.toString().orEmpty()
-            if (topic.isNotBlank()) {
-                val baseUrlForSubscribe = Uri.encode(
-                    findViewById<TextInputEditText>(R.id.baseUrlInput).text?.toString().orEmpty().trim().trimEnd('/').ifBlank { "https://ntfy.sh" }
-                )
-                startActivity(Intent(Intent.ACTION_VIEW,
-                    Uri.parse("io.heckel.ntfy://subscribe/$topic?baseUrl=$baseUrlForSubscribe")))
-            }
         }
 
         // Save button

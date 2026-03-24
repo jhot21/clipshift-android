@@ -15,6 +15,7 @@ class ClipboardSendActivity : Activity() {
         // Load config once here; reused in onWindowFocusChanged to avoid redundant I/O.
         paused = Config.load(this).paused
         if (paused) {
+            Toast.makeText(this, R.string.toast_paused, Toast.LENGTH_SHORT).show()
             finish()
             return
         }
