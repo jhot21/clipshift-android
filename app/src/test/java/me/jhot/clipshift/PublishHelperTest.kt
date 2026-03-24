@@ -28,7 +28,7 @@ class PublishHelperTest {
         context = ApplicationProvider.getApplicationContext()
         shadowPackageManager = Shadows.shadowOf(context.packageManager)
         Config.save(context, topic = "test-topic", deviceName = "Test Device",
-            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh")
     }
 
     @After
@@ -62,7 +62,7 @@ class PublishHelperTest {
     fun `send intent includes baseUrl extra`() {
         shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
         Config.save(context, topic = "test-topic", deviceName = "Test Device",
-            encryptionEnabled = false, paused = false, baseUrl = "https://my.server.com")
+            encryptionEnabled = false, baseUrl = "https://my.server.com")
         val shadows = Shadows.shadowOf(context as Application)
         PublishHelper.publish("hello", context)
 

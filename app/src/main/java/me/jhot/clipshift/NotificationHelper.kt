@@ -10,7 +10,6 @@ import androidx.core.app.NotificationCompat
 
 const val NOTIFICATION_ID = 1
 const val CHANNEL_ID = "clipshift_service"
-const val ACTION_TOGGLE_PAUSE = "me.jhot.clipshift.TOGGLE_PAUSE"
 
 object NotificationHelper {
 
@@ -25,19 +24,10 @@ object NotificationHelper {
     }
 
     fun build(context: Context, statusText: String, pendingClipText: String? = null): Notification {
-        val cfg = Config.load(context)
-        val paused = cfg.paused
-
         val settingsIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, SettingsActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-
-        val pauseIntent = PendingIntent.getService(
-            context, 1,
-            Intent(context, ClipShiftService::class.java).setAction(ACTION_TOGGLE_PAUSE),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
@@ -47,8 +37,6 @@ object NotificationHelper {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        val pauseLabel = if (paused) R.string.action_resume else R.string.action_pause
-
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_share)
             .setContentTitle(context.getString(R.string.app_name))
@@ -56,7 +44,6 @@ object NotificationHelper {
             .setContentIntent(settingsIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
-            .addAction(0, context.getString(pauseLabel), pauseIntent)
             .addAction(0, context.getString(R.string.action_send_clipboard), sendIntent)
 
         if (pendingClipText != null) {

@@ -104,7 +104,7 @@ class SettingsActivity : AppCompatActivity() {
         if (!valid) return
 
         Config.save(this, topic = topic, deviceName = deviceName,
-            encryptionEnabled = encryptionEnabled, paused = false, baseUrl = baseUrl)
+            encryptionEnabled = encryptionEnabled, baseUrl = baseUrl)
         if (encryptionEnabled) Config.savePassphrase(this, passphrase)
         else Config.savePassphrase(this, null)
 

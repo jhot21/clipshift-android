@@ -29,20 +29,7 @@ class ClipShiftService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val cfg = Config.load(this)
-
-        val paused = if (intent?.action == ACTION_TOGGLE_PAUSE) {
-            val nowPaused = !cfg.paused
-            Config.setPaused(this, nowPaused)
-            nowPaused
-        } else {
-            cfg.paused
-        }
-
-        val statusText = if (paused) getString(R.string.notification_paused)
-                         else getString(R.string.notification_active)
-        startForeground(NOTIFICATION_ID, NotificationHelper.build(this, statusText))
-
+        startForeground(NOTIFICATION_ID, NotificationHelper.build(this, getString(R.string.notification_awaiting)))
         return START_STICKY
     }
 }

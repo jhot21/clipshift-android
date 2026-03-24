@@ -33,7 +33,6 @@ class ConfigTest {
         assertThat(config.deviceName).isNotEmpty()  // defaults to Build.MODEL
         assertThat(config.topic).isEmpty()
         assertThat(config.encryptionEnabled).isFalse()
-        assertThat(config.paused).isFalse()
         assertThat(config.deviceId).matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")
     }
 
@@ -47,18 +46,10 @@ class ConfigTest {
     @Test
     fun `save and reload round-trips all fields`() {
         Config.save(context, topic = "clipshift-abc123", deviceName = "Pixel 8",
-            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh")
         val config = Config.load(context)
         assertThat(config.topic).isEqualTo("clipshift-abc123")
         assertThat(config.deviceName).isEqualTo("Pixel 8")
-    }
-
-    @Test
-    fun `paused flag persists`() {
-        Config.setPaused(context, true)
-        assertThat(Config.load(context).paused).isTrue()
-        Config.setPaused(context, false)
-        assertThat(Config.load(context).paused).isFalse()
     }
 
     @Test
@@ -70,28 +61,28 @@ class ConfigTest {
     @Test
     fun `baseUrl round-trips through save and load`() {
         Config.save(context, topic = "t", deviceName = "d",
-            encryptionEnabled = false, paused = false, baseUrl = "https://my.server.com")
+            encryptionEnabled = false, baseUrl = "https://my.server.com")
         assertThat(Config.load(context).baseUrl).isEqualTo("https://my.server.com")
     }
 
     @Test
     fun `baseUrl trailing slash is stripped on save`() {
         Config.save(context, topic = "t", deviceName = "d",
-            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh/")
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh/")
         assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
     }
 
     @Test
     fun `baseUrl multiple trailing slashes are stripped on save`() {
         Config.save(context, topic = "t", deviceName = "d",
-            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh///")
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh///")
         assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
     }
 
     @Test
     fun `baseUrl blank value falls back to https ntfy sh`() {
         Config.save(context, topic = "t", deviceName = "d",
-            encryptionEnabled = false, paused = false, baseUrl = "   ")
+            encryptionEnabled = false, baseUrl = "   ")
         assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
     }
 }

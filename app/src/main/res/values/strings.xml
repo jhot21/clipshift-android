@@ -1,10 +1,7 @@
 <resources>
     <string name="app_name">ClipSHIFT</string>
     <string name="notification_channel_name">ClipSHIFT Sync</string>
-    <string name="notification_active">Active</string>
-    <string name="notification_paused">Paused</string>
-    <string name="action_pause">Pause</string>
-    <string name="action_resume">Resume</string>
+    <string name="notification_awaiting">Awaiting ntfy message</string>
     <string name="action_send_clipboard">Send Clipboard</string>
     <string name="action_set_clipboard">Set Clipboard</string>
     <string name="toast_topic_not_configured">No topic configured — open Settings</string>
@@ -12,7 +9,6 @@
     <string name="toast_text_only">Only text is supported currently</string>
     <string name="toast_too_long">Clipboard contents too long</string>
     <string name="toast_content_too_large">Content too large to sync</string>
-    <string name="toast_paused">ClipSHIFT is paused</string>
     <string name="label_device_name">Device Name</string>
     <string name="label_topic">Topic</string>
     <string name="label_encryption">Encryption</string>
@@ -26,5 +22,5 @@
     <string name="notification_received_from">Last received from %1$s at %2$s</string>
     <string name="notification_error_passphrase">Error: check passphrase</string>
     <string name="permission_notification_denied">Notification permission denied — Send Clipboard action will be unavailable. Grant it in system settings.</string>
-    <string name="hint_base_url">https://ntfy.sh</string>
+    <string name="hint_base_url">Base URL</string>
 </resources>

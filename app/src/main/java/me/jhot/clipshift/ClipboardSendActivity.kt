@@ -7,24 +7,16 @@ import android.widget.Toast
 
 class ClipboardSendActivity : Activity() {
 
-    private var paused = false
     private var done = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Load config once here; reused in onWindowFocusChanged to avoid redundant I/O.
-        paused = Config.load(this).paused
-        if (paused) {
-            Toast.makeText(this, R.string.toast_paused, Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
         // Clipboard access must wait for window focus (Android 12+ restriction).
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus || done || paused) return
+        if (!hasFocus || done) return
         done = true
 
         val clipboard = getSystemService(ClipboardManager::class.java)

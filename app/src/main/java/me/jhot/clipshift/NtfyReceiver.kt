@@ -12,36 +12,33 @@ class NtfyReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val cfg = Config.load(context)
 
-        // 1. Pause check first
-        if (cfg.paused) return
-
-        // 2. Topic must be configured and match
+        // 1. Topic must be configured and match
         if (cfg.topic.isBlank()) return
         val msgTopic = intent.getStringExtra("topic") ?: return
         if (msgTopic != cfg.topic) return
 
-        // Base URL must match
-        val msgBaseUrl = intent.getStringExtra("base_url") ?: return
-        if (msgBaseUrl != cfg.baseUrl) return
+        // Base URL must match if present (null means older ntfy — allow)
+        val msgBaseUrl = intent.getStringExtra("base_url")
+        if (msgBaseUrl != null && msgBaseUrl != cfg.baseUrl) return
 
-        // 3. Parse tags
+        // 2. Parse tags
         val tagString = intent.getStringExtra("tags") ?: ""
         val tags = TagParser.parse(tagString)
 
-        // 4. Version check
+        // 3. Version check
         if (tags.version != null && tags.version > 1) return
 
-        // 5. Content type check
+        // 4. Content type check
         if (tags.contentType != null && tags.contentType != "text") return
 
-        // 6. Dedup — skip own messages
+        // 5. Dedup — skip own messages
         if (tags.deviceId == cfg.deviceId) return
 
-        // 7. Get content
+        // 6. Get content
         var content = intent.getStringExtra("message") ?: return
         val senderName = intent.getStringExtra("title") ?: "unknown"
 
-        // 8. Decrypt if needed
+        // 7. Decrypt if needed
         if (tags.encrypted) {
             val passphrase = Config.loadPassphrase(context)
             if (passphrase == null) {
@@ -56,9 +53,7 @@ class NtfyReceiver : BroadcastReceiver() {
             }
         }
 
-        // 9. Update notification with status and a "Set Clipboard" action
-        // (Direct clipboard writes from a BroadcastReceiver are denied on Android 10+;
-        // the user taps the notification action to apply the received text.)
+        // 8. Update notification with status and a "Set Clipboard" action
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val statusText = context.getString(R.string.notification_received_from, senderName, time)
         NotificationHelper.update(context, statusText, pendingClipText = content)

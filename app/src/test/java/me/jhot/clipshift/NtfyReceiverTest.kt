@@ -24,7 +24,7 @@ class NtfyReceiverTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         Config.save(context, topic = "test-topic", deviceName = "Android",
-            encryptionEnabled = false, paused = false, baseUrl = "https://ntfy.sh")
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh")
     }
 
     @After
@@ -44,7 +44,7 @@ class NtfyReceiverTest {
         putExtra("title", title)
         putExtra("message", message)
         putExtra("tags", tags)
-        if (baseUrl != null) putExtra("baseUrl", baseUrl)
+        if (baseUrl != null) putExtra("base_url", baseUrl)
     }
 
     @Test
@@ -86,16 +86,6 @@ class NtfyReceiverTest {
 
         val clipboard = context.getSystemService(ClipboardManager::class.java)
         assertThat(clipboard.primaryClip?.getItemAt(0)?.text?.toString()).isNotEqualTo("wrong topic")
-    }
-
-    @Test
-    fun `skips message when paused`() {
-        Config.setPaused(context, true)
-        val intent = makeIntent(message = "paused content")
-        NtfyReceiver().onReceive(context, intent)
-
-        val clipboard = context.getSystemService(ClipboardManager::class.java)
-        assertThat(clipboard.primaryClip?.getItemAt(0)?.text?.toString()).isNotEqualTo("paused content")
     }
 
     @Test
