@@ -7,18 +7,25 @@ import android.widget.Toast
 
 class ClipboardSendActivity : Activity() {
 
+    private var paused = false
+    private var done = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val cfg = Config.load(this)
-
-        // 1. Pause check
-        if (cfg.paused) {
+        // Load config once here; reused in onWindowFocusChanged to avoid redundant I/O.
+        paused = Config.load(this).paused
+        if (paused) {
             finish()
             return
         }
+        // Clipboard access must wait for window focus (Android 12+ restriction).
+    }
 
-        // 2. Read clipboard — must be text
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus || done || paused) return
+        done = true
+
         val clipboard = getSystemService(ClipboardManager::class.java)
         val clip = clipboard.primaryClip
         if (clip == null || clip.itemCount == 0 || !clip.description.hasMimeType("text/*")) {
@@ -29,14 +36,12 @@ class ClipboardSendActivity : Activity() {
 
         val text = clip.getItemAt(0).coerceToText(this).toString()
 
-        // 3. Size check
         if (text.toByteArray(Charsets.UTF_8).size > 4096) {
             Toast.makeText(this, R.string.toast_too_long, Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        // 4. Publish
         PublishHelper.publish(text, this)
         finish()
     }
