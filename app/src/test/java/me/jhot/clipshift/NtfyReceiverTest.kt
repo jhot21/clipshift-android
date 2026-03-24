@@ -1,5 +1,6 @@
 package me.jhot.clipshift
 
+import android.app.NotificationManager
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config as RobolectricConfig
 
 @RunWith(RobolectricTestRunner::class)
@@ -44,13 +46,22 @@ class NtfyReceiverTest {
     }
 
     @Test
-    fun `writes clipboard content from valid MESSAGE_RECEIVED broadcast`() {
+    fun `posts notification with Set Clipboard action for valid MESSAGE_RECEIVED broadcast`() {
         val intent = makeIntent()
         NtfyReceiver().onReceive(context, intent)
 
-        val clipboard = context.getSystemService(ClipboardManager::class.java)
-        val clip = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
-        assertThat(clip).isEqualTo("synced text")
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notifications = shadowOf(nm).allNotifications
+        assertThat(notifications).isNotEmpty()
+
+        val notification = notifications.last()
+        val setClipAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_set_clipboard)
+        }
+        assertThat(setClipAction).isNotNull()
+
+        val savedIntent = shadowOf(setClipAction!!.actionIntent).savedIntent
+        assertThat(savedIntent.getStringExtra(Intent.EXTRA_TEXT)).isEqualTo("synced text")
     }
 
     @Test

@@ -1,8 +1,6 @@
 package me.jhot.clipshift
 
 import android.content.BroadcastReceiver
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import java.text.SimpleDateFormat
@@ -54,13 +52,11 @@ class NtfyReceiver : BroadcastReceiver() {
             }
         }
 
-        // 9. Write to clipboard
-        val clipboard = context.getSystemService(ClipboardManager::class.java)
-        clipboard.setPrimaryClip(ClipData.newPlainText("ClipSHIFT", content))
-
-        // 10. Update service notification with received info
+        // 9. Update notification with status and a "Set Clipboard" action
+        // (Direct clipboard writes from a BroadcastReceiver are denied on Android 10+;
+        // the user taps the notification action to apply the received text.)
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val statusText = context.getString(R.string.notification_received_from, senderName, time)
-        NotificationHelper.update(context, statusText)
+        NotificationHelper.update(context, statusText, pendingClipText = content)
     }
 }
