@@ -1,12 +1,14 @@
 [versions]
 agp = "8.3.2"
-kotlin = "1.9.24"
+kotlin = "2.0.21"
 coreKtx = "1.13.1"
 appcompat = "1.7.0"
 material = "1.12.0"
 bouncycastle = "1.78.1"
 argon2kt = "1.6.0"
 securityCrypto = "1.0.0"
+composeBom = "2024.12.01"
+activityCompose = "1.9.3"
 junit = "4.13.2"
 robolectric = "4.12.2"
 mockk = "1.13.10"
@@ -21,6 +23,12 @@ material = { group = "com.google.android.material", name = "material", version.r
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 argon2kt = { group = "com.lambdapioneer.argon2kt", name = "argon2kt", version.ref = "argon2kt" }
 security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
@@ -31,3 +39,4 @@ truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
