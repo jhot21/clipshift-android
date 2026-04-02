@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -23,6 +26,8 @@ class NtfyReceiverTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        NotificationHelper.createChannel(context)
+        Crypto.keyDeriver = BcArgon2idDeriver()
         Config.save(context, topic = "test-topic", deviceName = "Android",
             encryptionEnabled = false, baseUrl = "https://ntfy.sh")
     }
@@ -117,6 +122,56 @@ class NtfyReceiverTest {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
         assertThat(clipboard.primaryClip?.getItemAt(0)?.text?.toString())
             .isNotEqualTo("wrong server")
+    }
+
+    @Test
+    fun `decrypts encrypted message and posts Set Clipboard action`() {
+        mockkObject(Config)
+        try {
+            every { Config.loadPassphrase(any()) } returns "s3cr3t"
+
+            val plaintext = "encrypted clipboard content"
+            val ciphertext = Crypto.encrypt(plaintext.toByteArray(Charsets.UTF_8), "s3cr3t")
+
+            val intent = makeIntent(
+                message = ciphertext,
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0",
+            )
+            // Use synchronous executor so decryption completes before assertions
+            NtfyReceiver(executor = Runnable::run).onReceive(context, intent)
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            val notification = shadowOf(nm).allNotifications.last()
+            val setClipAction = notification.actions?.firstOrNull {
+                it.title?.toString() == context.getString(R.string.action_set_clipboard)
+            }
+            assertThat(setClipAction).isNotNull()
+            val savedIntent = shadowOf(setClipAction!!.actionIntent).savedIntent
+            assertThat(savedIntent.getStringExtra(Intent.EXTRA_TEXT)).isEqualTo(plaintext)
+        } finally {
+            unmockkObject(Config)
+        }
+    }
+
+    @Test
+    fun `posts error notification when passphrase missing for encrypted message`() {
+        mockkObject(Config)
+        try {
+            every { Config.loadPassphrase(any()) } returns null
+
+            val intent = makeIntent(
+                message = "some-ciphertext",
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0",
+            )
+            NtfyReceiver(executor = Runnable::run).onReceive(context, intent)
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            val notification = shadowOf(nm).allNotifications.last()
+            assertThat(notification.extras.getString("android.text"))
+                .contains(context.getString(R.string.notification_error_passphrase))
+        } finally {
+            unmockkObject(Config)
+        }
     }
 
     @Test

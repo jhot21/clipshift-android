@@ -1,34 +1,9 @@
 package me.jhot.clipshift
 
 import com.google.common.truth.Truth.assertThat
-import org.bouncycastle.crypto.generators.Argon2BytesGenerator
-import org.bouncycastle.crypto.params.Argon2Parameters
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import java.text.Normalizer
-
-/**
- * Pure-JVM Argon2id implementation using BouncyCastle, substituted for the JNI-backed
- * argon2kt during unit tests where native libraries are unavailable.
- */
-private class BcArgon2idDeriver : KeyDeriver {
-    override fun deriveKey(passphrase: String, salt: ByteArray): ByteArray {
-        val normalized = Normalizer.normalize(passphrase, Normalizer.Form.NFKC)
-        val params = Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
-            .withSalt(salt)
-            .withIterations(3)
-            .withMemoryAsKB(65536)
-            .withParallelism(1)
-            .withVersion(Argon2Parameters.ARGON2_VERSION_13)
-            .build()
-        val gen = Argon2BytesGenerator()
-        gen.init(params)
-        val key = ByteArray(32)
-        gen.generateBytes(normalized.toByteArray(Charsets.UTF_8), key)
-        return key
-    }
-}
 
 class CryptoTest {
 
@@ -86,6 +61,18 @@ class CryptoTest {
         if (desktopCiphertext.startsWith("TODO")) return  // skip until vector is populated
         val decrypted = Crypto.decrypt(desktopCiphertext, "test-vector-pass")
         assertThat(String(decrypted, Charsets.UTF_8)).isEqualTo("hello cross-platform")
+    }
+
+    @Test
+    fun `decrypt throws descriptive error on ciphertext shorter than minimum frame`() {
+        // version(1) + salt(16) + nonce(24) = 41 bytes minimum; anything shorter must fail clearly
+        val tooShort = java.util.Base64.getEncoder().encodeToString(ByteArray(10))
+        try {
+            Crypto.decrypt(tooShort, "any-passphrase")
+            org.junit.Assert.fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message).contains("too short")
+        }
     }
 
     @Test

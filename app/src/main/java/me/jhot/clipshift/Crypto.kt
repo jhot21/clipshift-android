@@ -55,6 +55,9 @@ object Crypto {
 
     fun decrypt(base64Ciphertext: String, passphrase: String): ByteArray {
         val bytes = Base64.getDecoder().decode(base64Ciphertext)
+        require(bytes.size >= 1 + SALT_LEN + NONCE_LEN) {
+            "Ciphertext too short: ${bytes.size} bytes (minimum ${1 + SALT_LEN + NONCE_LEN})"
+        }
         val version = bytes[0]
         if (version > VERSION) throw IllegalArgumentException("Unsupported version: $version")
 

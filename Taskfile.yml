@@ -61,3 +61,8 @@ tasks:
       - sips -z 96 96 {{.SRC}} --out app/src/main/res/mipmap-xhdpi/ic_launcher.png
       - sips -z 144 144 {{.SRC}} --out app/src/main/res/mipmap-xxhdpi/ic_launcher.png
       - sips -z 192 192 {{.SRC}} --out app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+  
+  send:debug:
+    desc: send debug apk via magic wormhole
+    cmds:
+      - wormhole send app/build/outputs/apk/debug/app-debug.apk
