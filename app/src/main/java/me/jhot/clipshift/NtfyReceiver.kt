@@ -6,8 +6,12 @@ import android.content.Intent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
-class NtfyReceiver : BroadcastReceiver() {
+class NtfyReceiver(
+    private val executor: Executor = Executors.newSingleThreadExecutor(),
+) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val cfg = Config.load(context)
@@ -35,25 +39,38 @@ class NtfyReceiver : BroadcastReceiver() {
         if (tags.deviceId == cfg.deviceId) return
 
         // 6. Get content
-        var content = intent.getStringExtra("message") ?: return
+        val rawContent = intent.getStringExtra("message") ?: return
         val senderName = intent.getStringExtra("title") ?: "unknown"
 
-        // 7. Decrypt if needed
+        // 7. Decrypt if needed — Argon2id is expensive; dispatch off the main thread
         if (tags.encrypted) {
-            val passphrase = Config.loadPassphrase(context)
-            if (passphrase == null) {
-                NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
-                return
+            val pendingResult = goAsync()
+            executor.execute {
+                try {
+                    val passphrase = Config.loadPassphrase(context)
+                    if (passphrase == null) {
+                        NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
+                        return@execute
+                    }
+                    val decrypted = try {
+                        String(Crypto.decrypt(rawContent, passphrase), Charsets.UTF_8)
+                    } catch (e: Exception) {
+                        NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
+                        return@execute
+                    }
+                    postNotification(context, senderName, decrypted)
+                } finally {
+                    pendingResult?.finish()
+                }
             }
-            content = try {
-                String(Crypto.decrypt(content, passphrase), Charsets.UTF_8)
-            } catch (e: Exception) {
-                NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
-                return
-            }
+            return
         }
 
-        // 8. Update notification with status and a "Set Clipboard" action
+        // 8. Non-encrypted path — synchronous, fast
+        postNotification(context, senderName, rawContent)
+    }
+
+    private fun postNotification(context: Context, senderName: String, content: String) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val statusText = context.getString(R.string.notification_received_from, senderName, time)
         NotificationHelper.update(context, statusText, pendingClipText = content)

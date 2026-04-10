@@ -25,7 +25,7 @@ object Config {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val deviceId = prefs.getString(KEY_DEVICE_ID, null) ?: run {
             val newId = UUID.randomUUID().toString()
-            prefs.edit().putString(KEY_DEVICE_ID, newId).apply()
+            prefs.edit().putString(KEY_DEVICE_ID, newId).commit()
             newId
         }
         return AppConfig(

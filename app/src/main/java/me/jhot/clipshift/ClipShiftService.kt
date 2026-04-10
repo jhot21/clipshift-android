@@ -29,7 +29,14 @@ class ClipShiftService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, NotificationHelper.build(this, getString(R.string.notification_awaiting)))
+        try {
+            startForeground(NOTIFICATION_ID, NotificationHelper.build(this, getString(R.string.notification_awaiting)))
+        } catch (e: Exception) {
+            // ForegroundServiceStartNotAllowedException (API 31+): background sticky restart
+            // was denied the FGS exemption. Stop rather than crash-loop.
+            stopSelf()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 }
