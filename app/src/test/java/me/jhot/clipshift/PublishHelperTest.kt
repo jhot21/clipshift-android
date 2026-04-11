@@ -120,7 +120,7 @@ class PublishHelperTest {
         assertThat(broadcast?.getStringExtra("file")).isNotNull()
         assertThat(broadcast?.getStringExtra("filename")).isEqualTo("clipshift.txt")
         val tags = broadcast?.getStringExtra("tags") ?: ""
-        assertThat(tags).contains("compression:zstd")
+        assertThat(tags).contains("compression:gzip")
         assertThat(tags).contains("type:text")
         assertThat(broadcast?.getStringExtra("message")).isNull()
     }
@@ -165,7 +165,7 @@ class PublishHelperTest {
 
             val tags = shadows.broadcastIntents.last().getStringExtra("tags") ?: ""
             assertThat(tags).contains("encrypted")
-            assertThat(tags).contains("compression:zstd")
+            assertThat(tags).contains("compression:gzip")
         } finally {
             io.mockk.unmockkObject(Config)
             Config.save(context, topic = "test-topic", deviceName = "Test Device",

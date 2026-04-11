@@ -28,7 +28,7 @@ object TagParser {
                 tag.startsWith("type:") -> contentType = tag.removePrefix("type:")
                 tag.startsWith("ts:") -> timestamp = tag.removePrefix("ts:").toLongOrNull()
                 tag.startsWith("compression:") -> compression = when (val algo = tag.removePrefix("compression:")) {
-                    "zstd" -> CompressionAlgorithm.Zstd
+                    "gzip" -> CompressionAlgorithm.Gzip
                     else   -> CompressionAlgorithm.Unknown(algo)
                 }
             }

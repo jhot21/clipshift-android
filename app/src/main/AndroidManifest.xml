@@ -36,6 +36,7 @@
         <activity
             android:name=".ClipboardWriteActivity"
             android:theme="@style/Theme.ClipShift.Transparent"
+            android:taskAffinity=""
             android:noHistory="true"
             android:excludeFromRecents="true"
             android:exported="false" />

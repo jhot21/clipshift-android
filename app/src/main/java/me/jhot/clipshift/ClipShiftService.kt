@@ -1,11 +1,10 @@
 package me.jhot.clipshift
 
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import android.os.IBinder
+import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
 class ClipShiftService : Service() {
@@ -16,11 +15,7 @@ class ClipShiftService : Service() {
     override fun onCreate() {
         super.onCreate()
         val filter = IntentFilter("io.heckel.ntfy.MESSAGE_RECEIVED")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(ntfyReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(ntfyReceiver, filter)
-        }
+        ContextCompat.registerReceiver(this, ntfyReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
     }
 
     override fun onDestroy() {

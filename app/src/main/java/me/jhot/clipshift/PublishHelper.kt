@@ -108,7 +108,7 @@ object PublishHelper {
         val tags = buildString {
             append("v:1,did:${cfg.deviceId},type:text,ts:${now}")
             if (cfg.encryptionEnabled) append(",encrypted")
-            append(",compression:zstd")
+            append(",compression:gzip")
         }
 
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {

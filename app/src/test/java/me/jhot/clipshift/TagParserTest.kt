@@ -7,13 +7,13 @@ class TagParserTest {
 
     @Test
     fun `parses all fields from full tag string`() {
-        val tags = TagParser.parse("v:1,did:550e8400-e29b-41d4-a716-446655440000,type:text,ts:1711065600000,compression:zstd")
+        val tags = TagParser.parse("v:1,did:550e8400-e29b-41d4-a716-446655440000,type:text,ts:1711065600000,compression:gzip")
         assertThat(tags.version).isEqualTo(1)
         assertThat(tags.deviceId).isEqualTo("550e8400-e29b-41d4-a716-446655440000")
         assertThat(tags.contentType).isEqualTo("text")
         assertThat(tags.timestamp).isEqualTo(1711065600000L)
         assertThat(tags.encrypted).isFalse()
-        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Zstd)
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Gzip)
     }
 
     @Test
@@ -57,9 +57,9 @@ class TagParserTest {
     }
 
     @Test
-    fun `compression zstd tag is parsed as Zstd`() {
-        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:zstd")
-        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Zstd)
+    fun `compression gzip tag is parsed as Gzip`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:gzip")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Gzip)
     }
 
     @Test

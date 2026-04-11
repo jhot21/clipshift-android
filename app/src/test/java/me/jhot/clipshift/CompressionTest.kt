@@ -23,7 +23,7 @@ class CompressionTest {
     @Test
     fun `decompress throws on corrupt input`() {
         assertThrows(Exception::class.java) {
-            Compression.decompress("not zstd data".toByteArray())
+            Compression.decompress("not gzip data".toByteArray())
         }
     }
 

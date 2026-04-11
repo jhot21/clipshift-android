@@ -200,6 +200,26 @@ class NtfyReceiverTest {
     }
 
     @Test
+    fun `treats empty string attachment_url as body-only message`() {
+        val intent = makeIntent(message = "body text").apply {
+            putExtra("attachment_url", "")
+        }
+        NtfyReceiver().onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notifications = shadowOf(nm).allNotifications
+        assertThat(notifications).isNotEmpty()
+
+        val notification = notifications.last()
+        val setClipAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_set_clipboard)
+        }
+        assertThat(setClipAction).isNotNull()
+        val savedIntent = shadowOf(setClipAction!!.actionIntent).savedIntent
+        assertThat(savedIntent.getStringExtra(Intent.EXTRA_TEXT)).isEqualTo("body text")
+    }
+
+    @Test
     fun `allows message with no baseUrl extra (older ntfy)`() {
         val intent = makeIntent(message = "no base url")
         NtfyReceiver().onReceive(context, intent)
@@ -213,7 +233,7 @@ class NtfyReceiverTest {
         topic: String = "test-topic",
         title: String = "Desktop",
         attachmentUrl: String = "https://ntfy.sh/attach/test123",
-        tags: String = "v:1,did:other-device-uuid,type:text,ts:0,compression:zstd",
+        tags: String = "v:1,did:other-device-uuid,type:text,ts:0,compression:gzip",
         baseUrl: String? = null,
     ): Intent = Intent("io.heckel.ntfy.MESSAGE_RECEIVED").apply {
         putExtra("topic", topic)
@@ -230,7 +250,7 @@ class NtfyReceiverTest {
             every { Config.loadPassphrase(any()) } returns null
 
             val intent = makeAttachmentIntent(
-                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:zstd"
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:gzip"
             )
             NtfyReceiver(
                 executor = Runnable::run,
@@ -278,7 +298,7 @@ class NtfyReceiverTest {
             val encrypted = Crypto.encryptRaw(compressed, "s3cr3t")
 
             val intent = makeAttachmentIntent(
-                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:zstd"
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:gzip"
             )
             NtfyReceiver(
                 executor = Runnable::run,
@@ -334,7 +354,7 @@ class NtfyReceiverTest {
     fun `attachment message from own device is skipped`() {
         val cfg = Config.load(context)
         val intent = makeAttachmentIntent(
-            tags = "v:1,did:${cfg.deviceId},type:text,ts:0,compression:zstd"
+            tags = "v:1,did:${cfg.deviceId},type:text,ts:0,compression:gzip"
         )
         NtfyReceiver(
             executor = Runnable::run,

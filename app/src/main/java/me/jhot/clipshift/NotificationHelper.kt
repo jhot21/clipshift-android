@@ -50,7 +50,8 @@ object NotificationHelper {
             val writeClipIntent = PendingIntent.getActivity(
                 context, 3,
                 Intent(context, ClipboardWriteActivity::class.java)
-                    .putExtra(Intent.EXTRA_TEXT, pendingClipText),
+                    .putExtra(Intent.EXTRA_TEXT, pendingClipText)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             builder.addAction(0, context.getString(R.string.action_set_clipboard), writeClipIntent)

@@ -8,3 +8,5 @@ captures/
 .externalNativeBuild/
 .cxx/
 clipshift-release-key.jks
+.kotlin/
+logcat.txt

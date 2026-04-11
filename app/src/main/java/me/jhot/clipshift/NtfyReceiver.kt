@@ -52,7 +52,7 @@ class NtfyReceiver(
         if (tags.deviceId == cfg.deviceId) return
 
         val senderName = intent.getStringExtra("title") ?: "unknown"
-        val attachmentUrl = intent.getStringExtra("attachment_url")
+        val attachmentUrl = intent.getStringExtra("attachment_url")?.takeIf { it.isNotBlank() }
 
         if (attachmentUrl != null) {
             // Attachment path — always async (download may be slow)
@@ -71,7 +71,7 @@ class NtfyReceiver(
                     } else bytes
 
                     val decompressed = when (val comp = tags.compression) {
-                        CompressionAlgorithm.Zstd -> Compression.decompress(decrypted)
+                        CompressionAlgorithm.Gzip -> Compression.decompress(decrypted)
                         is CompressionAlgorithm.Unknown -> {
                             Log.d(TAG, "Unsupported compression algorithm: ${comp.name}")
                             return@execute
