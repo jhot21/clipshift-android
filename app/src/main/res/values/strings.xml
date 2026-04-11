@@ -23,4 +23,5 @@
     <string name="notification_error_passphrase">Error: check passphrase</string>
     <string name="permission_notification_denied">Notification permission denied — Send Clipboard action will be unavailable. Grant it in system settings.</string>
     <string name="hint_base_url">Base URL</string>
+    <string name="toast_send_failed">Send failed</string>
 </resources>

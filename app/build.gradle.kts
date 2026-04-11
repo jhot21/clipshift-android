@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.bouncycastle)
     implementation(libs.argon2kt)
     implementation(libs.security.crypto)
+    implementation(libs.zstd.jni)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
