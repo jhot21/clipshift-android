@@ -183,4 +183,115 @@ class NtfyReceiverTest {
         val notifications = shadowOf(nm).allNotifications
         assertThat(notifications).isNotEmpty()
     }
+
+    private fun makeAttachmentIntent(
+        topic: String = "test-topic",
+        title: String = "Desktop",
+        attachmentUrl: String = "https://ntfy.sh/attach/test123",
+        tags: String = "v:1,did:other-device-uuid,type:text,ts:0,compression:zstd",
+        baseUrl: String? = null,
+    ): Intent = Intent("io.heckel.ntfy.MESSAGE_RECEIVED").apply {
+        putExtra("topic", topic)
+        putExtra("title", title)
+        putExtra("attachment_url", attachmentUrl)
+        putExtra("tags", tags)
+        if (baseUrl != null) putExtra("base_url", baseUrl)
+    }
+
+    @Test
+    fun `downloads attachment and posts Set Clipboard action for unencrypted compressed message`() {
+        val originalText = "large clipboard content ".repeat(200)
+        val compressedBytes = Compression.compress(originalText.toByteArray(Charsets.UTF_8))
+
+        val intent = makeAttachmentIntent()
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> compressedBytes },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notification = shadowOf(nm).allNotifications.last()
+        val setClipAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_set_clipboard)
+        }
+        assertThat(setClipAction).isNotNull()
+        val savedIntent = shadowOf(setClipAction!!.actionIntent).savedIntent
+        assertThat(savedIntent.getStringExtra(Intent.EXTRA_TEXT)).isEqualTo(originalText)
+    }
+
+    @Test
+    fun `downloads and decrypts encrypted compressed attachment`() {
+        mockkObject(Config)
+        try {
+            every { Config.loadPassphrase(any()) } returns "s3cr3t"
+
+            val originalText = "secret large text ".repeat(200)
+            val compressed = Compression.compress(originalText.toByteArray(Charsets.UTF_8))
+            val encrypted = Crypto.encryptRaw(compressed, "s3cr3t")
+
+            val intent = makeAttachmentIntent(
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:zstd"
+            )
+            NtfyReceiver(
+                executor = Runnable::run,
+                httpFetcher = { _ -> encrypted },
+            ).onReceive(context, intent)
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            val notification = shadowOf(nm).allNotifications.last()
+            val setClipAction = notification.actions?.firstOrNull {
+                it.title?.toString() == context.getString(R.string.action_set_clipboard)
+            }
+            assertThat(setClipAction).isNotNull()
+            val savedIntent = shadowOf(setClipAction!!.actionIntent).savedIntent
+            assertThat(savedIntent.getStringExtra(Intent.EXTRA_TEXT)).isEqualTo(originalText)
+        } finally {
+            unmockkObject(Config)
+        }
+    }
+
+    @Test
+    fun `attachment with unknown compression is skipped gracefully`() {
+        val intent = makeAttachmentIntent(
+            tags = "v:1,did:other-device,type:text,ts:0,compression:png"
+        )
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> ByteArray(10) },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val hasSetClipAction = shadowOf(nm).allNotifications.any { n ->
+            n.actions?.any { it.title?.toString() == context.getString(R.string.action_set_clipboard) } == true
+        }
+        assertThat(hasSetClipAction).isFalse()
+    }
+
+    @Test
+    fun `attachment download failure is swallowed gracefully`() {
+        val intent = makeAttachmentIntent()
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> throw java.io.IOException("network error") },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val hasSetClipAction = shadowOf(nm).allNotifications.any { n ->
+            n.actions?.any { it.title?.toString() == context.getString(R.string.action_set_clipboard) } == true
+        }
+        assertThat(hasSetClipAction).isFalse()
+    }
+
+    @Test
+    fun `attachment message from own device is skipped`() {
+        val cfg = Config.load(context)
+        val intent = makeAttachmentIntent(
+            tags = "v:1,did:${cfg.deviceId},type:text,ts:0,compression:zstd"
+        )
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> throw AssertionError("should not fetch") },
+        ).onReceive(context, intent)
+        // No assertion needed — httpFetcher throwing AssertionError would fail the test
+    }
 }
