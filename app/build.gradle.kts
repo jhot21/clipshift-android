@@ -80,9 +80,18 @@ android {
     }
     sourceSets {
         getByName("main") {
-            jniLibs.srcDir(extractZstdNativeLibs)
+            jniLibs.srcDir(layout.buildDirectory.dir("zstd-jni-libs"))
         }
     }
+    packaging {
+        // Strip non-Android native libs bundled inside zstd-jni.jar as resources
+        resources.excludes += setOf("darwin/**", "win/**", "linux/**")
+    }
+}
+
+// Ensure native libs are extracted before any build task reads the jniLibs source set
+tasks.named("preBuild") {
+    dependsOn(extractZstdNativeLibs)
 }
 
 dependencies {
