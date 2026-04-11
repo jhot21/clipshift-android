@@ -1,6 +1,7 @@
 package me.jhot.clipshift
 
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -36,6 +37,30 @@ class NtfyReceiverTest {
     fun tearDown() {
         context.getSharedPreferences("clipshift_prefs", Context.MODE_PRIVATE)
             .edit().clear().commit()
+    }
+
+    /**
+     * Invokes [NtfyReceiver.onReceive] with a real [BroadcastReceiver.PendingResult] set, so
+     * that [BroadcastReceiver.goAsync] returns non-null even in Robolectric unit tests (where
+     * onReceive is called directly rather than through the Android broadcast framework).
+     *
+     * [BroadcastReceiver.PendingResult] can only be constructed via the package-private
+     * [ShadowBroadcastPendingResult.create], so we use reflection to call it.
+     */
+    private fun NtfyReceiver.onReceiveAsync(context: Context, intent: Intent) {
+        val shadowClass = Class.forName("org.robolectric.shadows.ShadowBroadcastPendingResult")
+        val createMethod = shadowClass.getDeclaredMethod(
+            "create", Int::class.java, String::class.java, android.os.Bundle::class.java, Boolean::class.java
+        )
+        createMethod.isAccessible = true
+        val pendingResult = createMethod.invoke(null, 0, null, null, true) as BroadcastReceiver.PendingResult
+
+        val setPendingResult = BroadcastReceiver::class.java.getDeclaredMethod(
+            "setPendingResult", BroadcastReceiver.PendingResult::class.java
+        )
+        setPendingResult.isAccessible = true
+        setPendingResult.invoke(this, pendingResult)
+        onReceive(context, intent)
     }
 
     private fun makeIntent(
@@ -138,7 +163,7 @@ class NtfyReceiverTest {
                 tags = "v:1,did:other-device,type:text,encrypted,ts:0",
             )
             // Use synchronous executor so decryption completes before assertions
-            NtfyReceiver(executor = Runnable::run).onReceive(context, intent)
+            NtfyReceiver(executor = Runnable::run).onReceiveAsync(context, intent)
 
             val nm = context.getSystemService(NotificationManager::class.java)
             val notification = shadowOf(nm).allNotifications.last()
@@ -163,7 +188,7 @@ class NtfyReceiverTest {
                 message = "some-ciphertext",
                 tags = "v:1,did:other-device,type:text,encrypted,ts:0",
             )
-            NtfyReceiver(executor = Runnable::run).onReceive(context, intent)
+            NtfyReceiver(executor = Runnable::run).onReceiveAsync(context, intent)
 
             val nm = context.getSystemService(NotificationManager::class.java)
             val notification = shadowOf(nm).allNotifications.last()
@@ -199,6 +224,29 @@ class NtfyReceiverTest {
     }
 
     @Test
+    fun `attachment path posts error notification when passphrase missing`() {
+        mockkObject(Config)
+        try {
+            every { Config.loadPassphrase(any()) } returns null
+
+            val intent = makeAttachmentIntent(
+                tags = "v:1,did:other-device,type:text,encrypted,ts:0,compression:zstd"
+            )
+            NtfyReceiver(
+                executor = Runnable::run,
+                httpFetcher = { _ -> ByteArray(10) },
+            ).onReceiveAsync(context, intent)
+
+            val nm = context.getSystemService(NotificationManager::class.java)
+            val notification = shadowOf(nm).allNotifications.last()
+            assertThat(notification.extras.getString("android.text"))
+                .contains(context.getString(R.string.notification_error_passphrase))
+        } finally {
+            unmockkObject(Config)
+        }
+    }
+
+    @Test
     fun `downloads attachment and posts Set Clipboard action for unencrypted compressed message`() {
         val originalText = "large clipboard content ".repeat(200)
         val compressedBytes = Compression.compress(originalText.toByteArray(Charsets.UTF_8))
@@ -207,7 +255,7 @@ class NtfyReceiverTest {
         NtfyReceiver(
             executor = Runnable::run,
             httpFetcher = { _ -> compressedBytes },
-        ).onReceive(context, intent)
+        ).onReceiveAsync(context, intent)
 
         val nm = context.getSystemService(NotificationManager::class.java)
         val notification = shadowOf(nm).allNotifications.last()
@@ -235,7 +283,7 @@ class NtfyReceiverTest {
             NtfyReceiver(
                 executor = Runnable::run,
                 httpFetcher = { _ -> encrypted },
-            ).onReceive(context, intent)
+            ).onReceiveAsync(context, intent)
 
             val nm = context.getSystemService(NotificationManager::class.java)
             val notification = shadowOf(nm).allNotifications.last()
@@ -258,7 +306,7 @@ class NtfyReceiverTest {
         NtfyReceiver(
             executor = Runnable::run,
             httpFetcher = { _ -> ByteArray(10) },
-        ).onReceive(context, intent)
+        ).onReceiveAsync(context, intent)
 
         val nm = context.getSystemService(NotificationManager::class.java)
         val hasSetClipAction = shadowOf(nm).allNotifications.any { n ->
@@ -273,7 +321,7 @@ class NtfyReceiverTest {
         NtfyReceiver(
             executor = Runnable::run,
             httpFetcher = { _ -> throw java.io.IOException("network error") },
-        ).onReceive(context, intent)
+        ).onReceiveAsync(context, intent)
 
         val nm = context.getSystemService(NotificationManager::class.java)
         val hasSetClipAction = shadowOf(nm).allNotifications.any { n ->

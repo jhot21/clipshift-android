@@ -84,10 +84,13 @@ class NtfyReceiver(
                         "text" -> postNotification(context, senderName, String(decompressed, Charsets.UTF_8))
                         else   -> Log.d(TAG, "Unsupported content type: ${tags.contentType}")
                     }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Attachment download failed: ${e.message}")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Attachment receive failed: ${e.message}")
+                    Log.e(TAG, "Attachment processing failed: ${e.message}")
+                    NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
                 } finally {
-                    pendingResult?.finish()
+                    pendingResult.finish()
                 }
             }
             return
@@ -118,7 +121,7 @@ class NtfyReceiver(
                     }
                     postNotification(context, senderName, decrypted)
                 } finally {
-                    pendingResult?.finish()
+                    pendingResult.finish()
                 }
             }
             return

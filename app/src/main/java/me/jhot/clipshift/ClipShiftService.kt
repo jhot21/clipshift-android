@@ -6,10 +6,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
+import java.util.concurrent.Executors
 
 class ClipShiftService : Service() {
 
-    private val ntfyReceiver = NtfyReceiver()
+    private val ioExecutor = Executors.newSingleThreadExecutor()
+    private val ntfyReceiver = NtfyReceiver(executor = ioExecutor)
 
     override fun onCreate() {
         super.onCreate()
@@ -24,6 +26,7 @@ class ClipShiftService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(ntfyReceiver)
+        ioExecutor.shutdown()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
