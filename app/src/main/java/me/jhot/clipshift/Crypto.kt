@@ -31,7 +31,7 @@ object Crypto {
      */
     var keyDeriver: KeyDeriver = Argon2idDeriver()
 
-    fun encrypt(plaintext: ByteArray, passphrase: String): String {
+    fun encryptRaw(plaintext: ByteArray, passphrase: String): ByteArray {
         val random = SecureRandom()
         val salt = ByteArray(SALT_LEN).also { random.nextBytes(it) }
         val nonce = ByteArray(NONCE_LEN).also { random.nextBytes(it) }
@@ -49,12 +49,13 @@ object Crypto {
         System.arraycopy(salt, 0, result, 1, SALT_LEN)
         System.arraycopy(nonce, 0, result, 1 + SALT_LEN, NONCE_LEN)
         System.arraycopy(out, 0, result, 1 + SALT_LEN + NONCE_LEN, len)
-
-        return Base64.getEncoder().encodeToString(result)
+        return result
     }
 
-    fun decrypt(base64Ciphertext: String, passphrase: String): ByteArray {
-        val bytes = Base64.getDecoder().decode(base64Ciphertext)
+    fun encrypt(plaintext: ByteArray, passphrase: String): String =
+        Base64.getEncoder().encodeToString(encryptRaw(plaintext, passphrase))
+
+    fun decryptRaw(bytes: ByteArray, passphrase: String): ByteArray {
         require(bytes.size >= 1 + SALT_LEN + NONCE_LEN) {
             "Ciphertext too short: ${bytes.size} bytes (minimum ${1 + SALT_LEN + NONCE_LEN})"
         }
@@ -74,6 +75,9 @@ object Crypto {
         len += cipher.doFinal(out, len)
         return out.copyOf(len)
     }
+
+    fun decrypt(base64Ciphertext: String, passphrase: String): ByteArray =
+        decryptRaw(Base64.getDecoder().decode(base64Ciphertext), passphrase)
 
     /**
      * Derives XChaCha20 subkey and 12-byte sub-nonce from a 32-byte key and 24-byte nonce.
@@ -105,22 +109,13 @@ object Crypto {
             ((b[i+2].toInt() and 0xff) shl 16) or
             ((b[i+3].toInt() and 0xff) shl 24)
 
-        var x0 = c0
-        var x1 = c1
-        var x2 = c2
-        var x3 = c3
-        var x4  = le32(key, 0)
-        var x5  = le32(key, 4)
-        var x6  = le32(key, 8)
-        var x7  = le32(key, 12)
-        var x8  = le32(key, 16)
-        var x9  = le32(key, 20)
-        var x10 = le32(key, 24)
-        var x11 = le32(key, 28)
-        var x12 = le32(nonce16, 0)
-        var x13 = le32(nonce16, 4)
-        var x14 = le32(nonce16, 8)
-        var x15 = le32(nonce16, 12)
+        var x0 = c0; var x1 = c1; var x2 = c2; var x3 = c3
+        var x4  = le32(key, 0);  var x5  = le32(key, 4)
+        var x6  = le32(key, 8);  var x7  = le32(key, 12)
+        var x8  = le32(key, 16); var x9  = le32(key, 20)
+        var x10 = le32(key, 24); var x11 = le32(key, 28)
+        var x12 = le32(nonce16, 0); var x13 = le32(nonce16, 4)
+        var x14 = le32(nonce16, 8); var x15 = le32(nonce16, 12)
 
         fun quarterRound(a: Int, b: Int, c: Int, d: Int): IntArray {
             var va = a; var vb = b; var vc = c; var vd = d
@@ -133,15 +128,15 @@ object Crypto {
 
         repeat(10) {
             // Column rounds
-            quarterRound(x0, x4, x8, x12).also { x0=it[0]; x4=it[1]; x8=it[2]; x12=it[3] }
-            quarterRound(x1, x5, x9, x13).also { x1=it[0]; x5=it[1]; x9=it[2]; x13=it[3] }
+            quarterRound(x0, x4, x8, x12).also  { x0=it[0]; x4=it[1]; x8=it[2];  x12=it[3] }
+            quarterRound(x1, x5, x9, x13).also  { x1=it[0]; x5=it[1]; x9=it[2];  x13=it[3] }
             quarterRound(x2, x6, x10, x14).also { x2=it[0]; x6=it[1]; x10=it[2]; x14=it[3] }
             quarterRound(x3, x7, x11, x15).also { x3=it[0]; x7=it[1]; x11=it[2]; x15=it[3] }
             // Diagonal rounds
             quarterRound(x0, x5, x10, x15).also { x0=it[0]; x5=it[1]; x10=it[2]; x15=it[3] }
             quarterRound(x1, x6, x11, x12).also { x1=it[0]; x6=it[1]; x11=it[2]; x12=it[3] }
-            quarterRound(x2, x7, x8, x13).also { x2=it[0]; x7=it[1]; x8=it[2]; x13=it[3] }
-            quarterRound(x3, x4, x9, x14).also { x3=it[0]; x4=it[1]; x9=it[2]; x14=it[3] }
+            quarterRound(x2, x7, x8, x13).also  { x2=it[0]; x7=it[1]; x8=it[2];  x13=it[3] }
+            quarterRound(x3, x4, x9, x14).also  { x3=it[0]; x4=it[1]; x9=it[2];  x14=it[3] }
         }
 
         // HChaCha20 output: first 4 and last 4 words (NOT added back to initial state)
@@ -153,14 +148,10 @@ object Crypto {
         }
 
         val out = ByteArray(32)
-        putLe32(out, 0, x0)
-        putLe32(out, 4, x1)
-        putLe32(out, 8, x2)
-        putLe32(out, 12, x3)
-        putLe32(out, 16, x12)
-        putLe32(out, 20, x13)
-        putLe32(out, 24, x14)
-        putLe32(out, 28, x15)
+        putLe32(out, 0, x0);  putLe32(out, 4, x1)
+        putLe32(out, 8, x2);  putLe32(out, 12, x3)
+        putLe32(out, 16, x12); putLe32(out, 20, x13)
+        putLe32(out, 24, x14); putLe32(out, 28, x15)
         return out
     }
 }

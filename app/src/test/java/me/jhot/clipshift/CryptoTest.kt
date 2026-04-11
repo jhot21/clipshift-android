@@ -85,4 +85,35 @@ class CryptoTest {
         val decrypted = Crypto.decrypt(ct, pass2)
         assertThat(String(decrypted)).isEqualTo("data")
     }
+
+    @Test
+    fun `encryptRaw then decryptRaw round-trips correctly`() {
+        val original = "raw binary round trip".toByteArray(Charsets.UTF_8)
+        val passphrase = "test-passphrase"
+        val raw = Crypto.encryptRaw(original, passphrase)
+        val decrypted = Crypto.decryptRaw(raw, passphrase)
+        assertThat(decrypted).isEqualTo(original)
+    }
+
+    @Test
+    fun `encrypt is base64 encoding of encryptRaw output`() {
+        // Freeze the key deriver output so encrypt and encryptRaw use the same salt/nonce
+        // by verifying decrypt(encrypt(x)) == decryptRaw(Base64.decode(encrypt(x)))
+        val plaintext = "hello".toByteArray(Charsets.UTF_8)
+        val passphrase = "pass"
+        val ciphertext = Crypto.encrypt(plaintext, passphrase)
+        val raw = java.util.Base64.getDecoder().decode(ciphertext)
+        val decrypted = Crypto.decryptRaw(raw, passphrase)
+        assertThat(decrypted).isEqualTo(plaintext)
+    }
+
+    @Test
+    fun `decryptRaw throws on ciphertext shorter than minimum frame`() {
+        try {
+            Crypto.decryptRaw(ByteArray(10), "passphrase")
+            fail("Expected IllegalArgumentException")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message).contains("too short")
+        }
+    }
 }
