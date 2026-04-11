@@ -7,12 +7,13 @@ class TagParserTest {
 
     @Test
     fun `parses all fields from full tag string`() {
-        val tags = TagParser.parse("v:1,did:550e8400-e29b-41d4-a716-446655440000,type:text,ts:1711065600000")
+        val tags = TagParser.parse("v:1,did:550e8400-e29b-41d4-a716-446655440000,type:text,ts:1711065600000,compression:zstd")
         assertThat(tags.version).isEqualTo(1)
         assertThat(tags.deviceId).isEqualTo("550e8400-e29b-41d4-a716-446655440000")
         assertThat(tags.contentType).isEqualTo("text")
         assertThat(tags.timestamp).isEqualTo(1711065600000L)
         assertThat(tags.encrypted).isFalse()
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Zstd)
     }
 
     @Test
@@ -53,5 +54,23 @@ class TagParserTest {
     fun `unknown tags are silently ignored`() {
         val tags = TagParser.parse("v:1,unknowntag,foo:bar")
         assertThat(tags.version).isEqualTo(1)
+    }
+
+    @Test
+    fun `compression zstd tag is parsed as Zstd`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:zstd")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Zstd)
+    }
+
+    @Test
+    fun `unknown compression tag is parsed as Unknown with preserved name`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:png")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Unknown("png"))
+    }
+
+    @Test
+    fun `absent compression tag is null`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0")
+        assertThat(tags.compression).isNull()
     }
 }
