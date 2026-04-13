@@ -10,3 +10,4 @@ captures/
 clipshift-release-key.jks
 .kotlin/
 logcat.txt
+.task/
