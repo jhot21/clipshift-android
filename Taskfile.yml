@@ -5,11 +5,15 @@ env:
 
 vars:
   SDK_PATH: ~/Library/Android/sdk/build-tools/36.1.0
+  APP_NAME: clipshift
 
 includes:
   android-common:
     taskfile: https://codeberg.org/jhot/taskfiles/raw/branch/main/android.yaml
     flatten: true
+  git:
+    taskfile: https://codeberg.org/jhot/taskfiles/raw/branch/main/git.yaml
+    flatten: false
 
 tasks:
   # build:
