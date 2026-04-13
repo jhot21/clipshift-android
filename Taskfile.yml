@@ -1,13 +1,13 @@
 version: '3'
 
-env:
-  JAVA_HOME: /Applications/Android Studio.app/Contents/jbr/Contents/Home
-
 vars:
-  SDK_PATH: ~/Library/Android/sdk/build-tools/36.1.0
   APP_NAME: clipshift
 
 includes:
+  os:
+    taskfile: Taskfile_{{OS}}.yml
+    flatten: true
+    optional: true
   android-common:
     taskfile: https://codeberg.org/jhot/taskfiles/raw/branch/main/android.yaml
     flatten: true
@@ -16,50 +16,6 @@ includes:
     flatten: false
 
 tasks:
-  # build:
-  #   desc: Build debug APK
-  #   cmds:
-  #     - ./gradlew assembleDebug
-
-  # build:release:
-  #   desc: Build signed release APK
-  #   cmds:
-  #     - ./gradlew assembleRelease
-  #     - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
-  #     - '{{ .SDK_PATH }}/apksigner sign --ks clipshift-release-key.jks --out app/build/outputs/apk/release/clipshift.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
-
-  # build:release:ci:
-  #   desc: Build signed release APK for CI (reads signing config from env vars)
-  #   cmds:
-  #     - ./gradlew assembleRelease
-  #     - '{{ .SDK_PATH }}/zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/clipshift-release-unsigned.apk'
-  #     - '{{ .SDK_PATH }}/apksigner sign --verbose --ks "$KEYSTORE_PATH" --ks-pass env:KEYSTORE_PASSWORD --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASSWORD --in app/build/outputs/apk/release/clipshift-release-unsigned.apk --out app/build/outputs/apk/release/clipshift.apk'
-
-  # test:
-  #   desc: Run JVM unit tests
-  #   cmds:
-  #     - ./gradlew test
-
-  # test:android:
-  #   desc: Run instrumented tests (requires connected device or emulator)
-  #   cmds:
-  #     - ./gradlew connectedAndroidTest
-
-  # install:
-  #   desc: Build and install debug APK on connected device
-  #   cmds:
-  #     - ./gradlew installDebug
-
-  # check:
-  #   desc: Run lint and unit tests
-  #   cmds:
-  #     - ./gradlew lint test
-
-  # clean:
-  #   desc: Clean build artifacts
-  #   cmds:
-  #     - ./gradlew clean
-
   icons:
     desc: Generate Android mipmap icons from desktop source icon
     vars:
@@ -70,8 +26,3 @@ tasks:
       - sips -z 96 96 {{.SRC}} --out app/src/main/res/mipmap-xhdpi/ic_launcher.png
       - sips -z 144 144 {{.SRC}} --out app/src/main/res/mipmap-xxhdpi/ic_launcher.png
       - sips -z 192 192 {{.SRC}} --out app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-  
-  # send:debug:
-  #   desc: send debug apk via magic wormhole
-  #   cmds:
-  #     - wormhole send app/build/outputs/apk/debug/app-debug.apk
