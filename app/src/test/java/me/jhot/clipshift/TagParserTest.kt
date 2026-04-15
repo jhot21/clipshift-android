@@ -63,9 +63,33 @@ class TagParserTest {
     }
 
     @Test
+    fun `compression png tag is parsed as Png`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:image,ts:0,compression:png")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Png)
+    }
+
+    @Test
+    fun `compression jpeg tag is parsed as Jpeg`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:image,ts:0,compression:jpeg")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Jpeg)
+    }
+
+    @Test
+    fun `compression webp tag is parsed as WebP`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:image,ts:0,compression:webp")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.WebP)
+    }
+
+    @Test
+    fun `compression heic tag is parsed as Heic`() {
+        val tags = TagParser.parse("v:1,did:uuid,type:image,ts:0,compression:heic")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Heic)
+    }
+
+    @Test
     fun `unknown compression tag is parsed as Unknown with preserved name`() {
-        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:png")
-        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Unknown("png"))
+        val tags = TagParser.parse("v:1,did:uuid,type:text,ts:0,compression:bmp")
+        assertThat(tags.compression).isEqualTo(CompressionAlgorithm.Unknown("bmp"))
     }
 
     @Test

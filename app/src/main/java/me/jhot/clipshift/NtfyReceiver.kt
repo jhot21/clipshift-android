@@ -72,6 +72,13 @@ class NtfyReceiver(
 
                     val decompressed = when (val comp = tags.compression) {
                         CompressionAlgorithm.Gzip -> Compression.decompress(decrypted)
+                        CompressionAlgorithm.Png,
+                        CompressionAlgorithm.Jpeg,
+                        CompressionAlgorithm.WebP,
+                        CompressionAlgorithm.Heic -> {
+                            Log.d(TAG, "Image compression not yet handled: $comp")
+                            return@execute
+                        }
                         is CompressionAlgorithm.Unknown -> {
                             Log.d(TAG, "Unsupported compression algorithm: ${comp.name}")
                             return@execute

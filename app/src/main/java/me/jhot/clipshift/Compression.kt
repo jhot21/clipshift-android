@@ -7,6 +7,10 @@ import java.util.zip.GZIPOutputStream
 
 sealed class CompressionAlgorithm {
     object Gzip : CompressionAlgorithm()
+    object Png : CompressionAlgorithm()
+    object Jpeg : CompressionAlgorithm()
+    object WebP : CompressionAlgorithm()
+    object Heic : CompressionAlgorithm()
     data class Unknown(val name: String) : CompressionAlgorithm()
 }
 
