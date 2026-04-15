@@ -10,6 +10,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 private const val COMPRESS_THRESHOLD = 3072
+private val NTFY_PACKAGES = listOf("io.heckel.ntfy", "io.heckel.ntfy.debug")
 
 object PublishHelper {
 
@@ -20,16 +21,16 @@ object PublishHelper {
             return
         }
 
-        if (!ntfyInstalled(context)) {
+        val ntfyPackage = resolveNtfyPackage(context) ?: run {
             Toast.makeText(context, R.string.toast_ntfy_not_installed, Toast.LENGTH_SHORT).show()
             return
         }
 
         val bytes = text.toByteArray(Charsets.UTF_8)
         if (bytes.size <= COMPRESS_THRESHOLD) {
-            sendBodyMessage(bytes, text, cfg, context)
+            sendBodyMessage(bytes, text, cfg, ntfyPackage, context)
         } else {
-            sendTextAttachmentMessage(bytes, cfg, context)
+            sendTextAttachmentMessage(bytes, cfg, ntfyPackage, context)
         }
     }
 
@@ -47,7 +48,7 @@ object PublishHelper {
             return
         }
 
-        if (!ntfyInstalled(context)) {
+        val ntfyPackage = resolveNtfyPackage(context) ?: run {
             Toast.makeText(context, R.string.toast_ntfy_not_installed, Toast.LENGTH_SHORT).show()
             return
         }
@@ -86,13 +87,14 @@ object PublishHelper {
             return
         }
 
-        sendImageAttachmentMessage(bytes, compressionTag, cfg, context)
+        sendImageAttachmentMessage(bytes, compressionTag, cfg, ntfyPackage, context)
     }
 
-    private fun ntfyInstalled(context: Context): Boolean = try {
-        context.packageManager.getPackageInfo("io.heckel.ntfy", 0)
-        true
-    } catch (e: PackageManager.NameNotFoundException) { false }
+    private fun resolveNtfyPackage(context: Context): String? =
+        NTFY_PACKAGES.firstOrNull { pkg ->
+            try { context.packageManager.getPackageInfo(pkg, 0); true }
+            catch (e: PackageManager.NameNotFoundException) { false }
+        }
 
     private fun queryFileSize(uri: Uri, context: Context): Long? {
         val cursor = context.contentResolver.query(
@@ -105,7 +107,13 @@ object PublishHelper {
         }
     }
 
-    private fun sendBodyMessage(bytes: ByteArray, text: String, cfg: AppConfig, context: Context) {
+    private fun sendBodyMessage(
+        bytes: ByteArray,
+        text: String,
+        cfg: AppConfig,
+        ntfyPackage: String,
+        context: Context,
+    ) {
         val (content, encrypted) = if (cfg.encryptionEnabled) {
             val passphrase = Config.loadPassphrase(context) ?: return
             Crypto.encrypt(bytes, passphrase) to true
@@ -119,7 +127,7 @@ object PublishHelper {
         }
 
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
-            setPackage("io.heckel.ntfy")
+            setPackage(ntfyPackage)
             putExtra("topic", cfg.topic)
             putExtra("title", cfg.deviceName)
             putExtra("message", content)
@@ -131,7 +139,12 @@ object PublishHelper {
         Toast.makeText(context, R.string.toast_sent, Toast.LENGTH_SHORT).show()
     }
 
-    private fun sendTextAttachmentMessage(bytes: ByteArray, cfg: AppConfig, context: Context) {
+    private fun sendTextAttachmentMessage(
+        bytes: ByteArray,
+        cfg: AppConfig,
+        ntfyPackage: String,
+        context: Context,
+    ) {
         val maxBytes = cfg.maxAttachmentSizeMb.toLong() * 1024 * 1024
         if (bytes.size.toLong() > maxBytes) {
             Toast.makeText(context, R.string.toast_content_too_large, Toast.LENGTH_SHORT).show()
@@ -184,7 +197,7 @@ object PublishHelper {
         }
 
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
-            setPackage("io.heckel.ntfy")
+            setPackage(ntfyPackage)
             putExtra("topic", cfg.topic)
             putExtra("title", cfg.deviceName)
             putExtra("file", fileUri.toString())
@@ -202,6 +215,7 @@ object PublishHelper {
         bytes: ByteArray,
         compressionTag: String,
         cfg: AppConfig,
+        ntfyPackage: String,
         context: Context,
     ) {
         val now = System.currentTimeMillis()
@@ -244,7 +258,7 @@ object PublishHelper {
         }
 
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
-            setPackage("io.heckel.ntfy")
+            setPackage(ntfyPackage)
             putExtra("topic", cfg.topic)
             putExtra("title", cfg.deviceName)
             putExtra("message", "clipshift")

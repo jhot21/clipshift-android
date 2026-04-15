@@ -9,6 +9,7 @@
 
     <queries>
         <package android:name="io.heckel.ntfy" />
+        <package android:name="io.heckel.ntfy.debug" />
     </queries>
 
     <application
