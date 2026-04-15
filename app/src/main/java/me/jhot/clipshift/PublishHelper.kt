@@ -132,7 +132,7 @@ object PublishHelper {
             putExtra("title", cfg.deviceName)
             putExtra("message", content)
             putExtra("tags", tags)
-            putExtra("priority", 3)
+            putExtra("priority", "3")
             putExtra("base_url", cfg.baseUrl)
         }
         context.sendBroadcast(intent)
@@ -196,6 +196,7 @@ object PublishHelper {
             append(",compression:gzip")
         }
 
+        context.grantUriPermission(ntfyPackage, fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
             setPackage(ntfyPackage)
             putExtra("topic", cfg.topic)
@@ -203,9 +204,8 @@ object PublishHelper {
             putExtra("file", fileUri.toString())
             putExtra("filename", "clipshift.txt")
             putExtra("tags", tags)
-            putExtra("priority", 3)
+            putExtra("priority", "3")
             putExtra("base_url", cfg.baseUrl)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.sendBroadcast(intent)
         Toast.makeText(context, R.string.toast_sent, Toast.LENGTH_SHORT).show()
@@ -257,6 +257,7 @@ object PublishHelper {
             append(",compression:${compressionTag}")
         }
 
+        context.grantUriPermission(ntfyPackage, fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val intent = Intent("io.heckel.ntfy.SEND_MESSAGE").apply {
             setPackage(ntfyPackage)
             putExtra("topic", cfg.topic)
@@ -265,9 +266,8 @@ object PublishHelper {
             putExtra("file_uri", fileUri.toString())
             putExtra("filename", "clipshift.${ext}")
             putExtra("tags", tags)
-            putExtra("priority", 3)
+            putExtra("priority", "3")
             putExtra("base_url", cfg.baseUrl)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.sendBroadcast(intent)
         Toast.makeText(context, R.string.toast_sent, Toast.LENGTH_SHORT).show()
