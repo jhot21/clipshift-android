@@ -77,6 +77,7 @@ private fun SettingsScreen() {
         mutableStateOf(if (cfg.encryptionEnabled) Config.loadPassphrase(context) ?: "" else "")
     }
     var encryptionEnabled by rememberSaveable { mutableStateOf(cfg.encryptionEnabled) }
+    var maxAttachmentSizeMb by rememberSaveable { mutableStateOf(cfg.maxAttachmentSizeMb.toString()) }
     var showTopicError by rememberSaveable { mutableStateOf(false) }
     var showPassphraseError by rememberSaveable { mutableStateOf(false) }
     var showBanner by rememberSaveable { mutableStateOf(cfg.topic.isBlank()) }
@@ -205,6 +206,16 @@ private fun SettingsScreen() {
                 )
             }
 
+            OutlinedTextField(
+                value = maxAttachmentSizeMb,
+                onValueChange = { maxAttachmentSizeMb = it.filter { c -> c.isDigit() } },
+                label = { Text(stringResource(R.string.label_max_attachment_size)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+            )
+
             if (showPassphraseError) {
                 Text(
                     text = stringResource(R.string.error_passphrase_required),
@@ -240,6 +251,7 @@ private fun SettingsScreen() {
                         deviceName = trimmedDeviceName,
                         encryptionEnabled = encryptionEnabled,
                         baseUrl = trimmedBaseUrl,
+                        maxAttachmentSizeMb = maxAttachmentSizeMb.trim().toIntOrNull()?.coerceAtLeast(1) ?: 15,
                     )
                     if (encryptionEnabled) Config.savePassphrase(context, passphrase)
                     else Config.savePassphrase(context, null)
