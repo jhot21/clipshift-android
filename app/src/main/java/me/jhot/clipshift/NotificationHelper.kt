@@ -10,6 +10,15 @@ import androidx.core.app.NotificationCompat
 
 const val NOTIFICATION_ID = 1
 const val CHANNEL_ID = "clipshift_service"
+const val EXTRA_ATTACHMENT_URL = "me.jhot.clipshift.ATTACHMENT_URL"
+const val EXTRA_ENCRYPTED = "me.jhot.clipshift.ENCRYPTED"
+const val EXTRA_COMPRESSION = "me.jhot.clipshift.COMPRESSION"
+
+data class PendingImageData(
+    val attachmentUrl: String,
+    val encrypted: Boolean,
+    val compressionTag: String,
+)
 
 object NotificationHelper {
 
@@ -23,7 +32,12 @@ object NotificationHelper {
             .createNotificationChannel(channel)
     }
 
-    fun build(context: Context, statusText: String, pendingClipText: String? = null): Notification {
+    fun build(
+        context: Context,
+        statusText: String,
+        pendingClipText: String? = null,
+        pendingImageData: PendingImageData? = null,
+    ): Notification {
         val settingsIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, SettingsActivity::class.java)
@@ -57,11 +71,29 @@ object NotificationHelper {
             builder.addAction(0, context.getString(R.string.action_set_clipboard), writeClipIntent)
         }
 
+        if (pendingImageData != null) {
+            val shareImageIntent = PendingIntent.getActivity(
+                context, 4,
+                Intent(context, ImageShareActivity::class.java)
+                    .putExtra(EXTRA_ATTACHMENT_URL, pendingImageData.attachmentUrl)
+                    .putExtra(EXTRA_ENCRYPTED, pendingImageData.encrypted)
+                    .putExtra(EXTRA_COMPRESSION, pendingImageData.compressionTag)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            builder.addAction(0, context.getString(R.string.action_share_image), shareImageIntent)
+        }
+
         return builder.build()
     }
 
-    fun update(context: Context, statusText: String, pendingClipText: String? = null) {
+    fun update(
+        context: Context,
+        statusText: String,
+        pendingClipText: String? = null,
+        pendingImageData: PendingImageData? = null,
+    ) {
         val nm = context.getSystemService(NotificationManager::class.java)
-        nm.notify(NOTIFICATION_ID, build(context, statusText, pendingClipText))
+        nm.notify(NOTIFICATION_ID, build(context, statusText, pendingClipText, pendingImageData))
     }
 }
