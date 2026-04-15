@@ -10,6 +10,7 @@ data class AppConfig(
     val topic: String,
     val encryptionEnabled: Boolean,
     val baseUrl: String,
+    val maxAttachmentSizeMb: Int,
 )
 
 private const val PREFS_NAME = "clipshift_prefs"
@@ -19,6 +20,7 @@ private const val KEY_TOPIC = "topic"
 private const val KEY_ENCRYPTION_ENABLED = "encryption_enabled"
 private const val KEY_PASSPHRASE = "passphrase"
 private const val KEY_BASE_URL = "base_url"
+private const val KEY_MAX_ATTACHMENT_SIZE_MB = "max_attachment_size_mb"
 
 object Config {
     fun load(context: Context): AppConfig {
@@ -34,6 +36,7 @@ object Config {
             topic = prefs.getString(KEY_TOPIC, "") ?: "",
             encryptionEnabled = prefs.getBoolean(KEY_ENCRYPTION_ENABLED, false),
             baseUrl = prefs.getString(KEY_BASE_URL, "https://ntfy.sh") ?: "https://ntfy.sh",
+            maxAttachmentSizeMb = prefs.getInt(KEY_MAX_ATTACHMENT_SIZE_MB, 15),
         )
     }
 
@@ -43,6 +46,7 @@ object Config {
         deviceName: String,
         encryptionEnabled: Boolean,
         baseUrl: String,
+        maxAttachmentSizeMb: Int = 15,
     ) {
         val cleanBaseUrl = baseUrl.trim().trimEnd('/').ifBlank { "https://ntfy.sh" }
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
@@ -50,6 +54,7 @@ object Config {
             .putString(KEY_DEVICE_NAME, deviceName)
             .putBoolean(KEY_ENCRYPTION_ENABLED, encryptionEnabled)
             .putString(KEY_BASE_URL, cleanBaseUrl)
+            .putInt(KEY_MAX_ATTACHMENT_SIZE_MB, maxAttachmentSizeMb.coerceAtLeast(1))
             .apply()
     }
 

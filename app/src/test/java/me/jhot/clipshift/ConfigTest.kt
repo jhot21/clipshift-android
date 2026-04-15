@@ -85,4 +85,18 @@ class ConfigTest {
             encryptionEnabled = false, baseUrl = "   ")
         assertThat(Config.load(context).baseUrl).isEqualTo("https://ntfy.sh")
     }
+
+    @Test
+    fun `maxAttachmentSizeMb defaults to 15`() {
+        val config = Config.load(context)
+        assertThat(config.maxAttachmentSizeMb).isEqualTo(15)
+    }
+
+    @Test
+    fun `maxAttachmentSizeMb round-trips through save and load`() {
+        Config.save(context, topic = "t", deviceName = "d",
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh",
+            maxAttachmentSizeMb = 50)
+        assertThat(Config.load(context).maxAttachmentSizeMb).isEqualTo(50)
+    }
 }
