@@ -83,7 +83,7 @@ class ImageShareActivity : Activity() {
                     ?.forEach { it.delete() }
 
                 // Write to cache
-                val ext = compressionTagToExt(compressionTag)
+                val ext = imageCompressionTagToExt(compressionTag)
                 val mimeType = compressionTagToMimeType(compressionTag)
                 val file = File(cacheDir, "clipshift_image_${now}.${ext}")
                 withContext(Dispatchers.IO) { file.writeBytes(imageBytes) }
@@ -118,7 +118,7 @@ class ImageShareActivity : Activity() {
     }
 }
 
-private fun compressionTagToExt(tag: String): String = when (tag) {
+private fun imageCompressionTagToExt(tag: String): String = when (tag) {
     "jpeg" -> "jpg"
     else   -> tag  // "png", "webp", "heic"
 }

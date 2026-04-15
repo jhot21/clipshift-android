@@ -4,7 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ProviderInfo
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
+import org.robolectric.fakes.RoboCursor
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
@@ -171,5 +174,91 @@ class PublishHelperTest {
             Config.save(context, topic = "test-topic", deviceName = "Test Device",
                 encryptionEnabled = false, baseUrl = "https://ntfy.sh")
         }
+    }
+
+    @Test
+    fun `publishImage sends broadcast with image tags for png`() {
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
+        val shadows = Shadows.shadowOf(context as Application)
+
+        val pngBytes = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47)  // PNG magic bytes
+        val uri = android.net.Uri.parse("content://me.jhot.clipshift.test/image.png")
+        val shadowResolver = Shadows.shadowOf(context.contentResolver)
+        shadowResolver.registerInputStream(uri, pngBytes.inputStream())
+        // Size cursor
+        val cursor = RoboCursor().apply {
+            setColumnNames(listOf(OpenableColumns.SIZE))
+            setResults(arrayOf(arrayOf(pngBytes.size.toLong())))
+        }
+        shadowResolver.setCursor(uri, cursor)
+
+        PublishHelper.publishImage(uri, "png", context)
+
+        val broadcast = shadows.broadcastIntents.lastOrNull()
+        assertThat(broadcast?.action).isEqualTo("io.heckel.ntfy.SEND_MESSAGE")
+        val tags = broadcast?.getStringExtra("tags") ?: ""
+        assertThat(tags).contains("type:image")
+        assertThat(tags).contains("compression:png")
+        assertThat(tags).doesNotContain("type:text")
+        assertThat(broadcast?.getStringExtra("filename")).isEqualTo("clipshift.png")
+    }
+
+    @Test
+    fun `publishImage uses jpg extension for jpeg compression tag`() {
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
+        val shadows = Shadows.shadowOf(context as Application)
+
+        val jpegBytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())
+        val uri = android.net.Uri.parse("content://me.jhot.clipshift.test/photo.jpg")
+        val shadowResolver = Shadows.shadowOf(context.contentResolver)
+        shadowResolver.registerInputStream(uri, jpegBytes.inputStream())
+        val cursor = RoboCursor().apply {
+            setColumnNames(listOf(OpenableColumns.SIZE))
+            setResults(arrayOf(arrayOf(jpegBytes.size.toLong())))
+        }
+        shadowResolver.setCursor(uri, cursor)
+
+        PublishHelper.publishImage(uri, "jpeg", context)
+
+        val broadcast = shadows.broadcastIntents.lastOrNull()
+        val tags = broadcast?.getStringExtra("tags") ?: ""
+        assertThat(tags).contains("compression:jpeg")
+        assertThat(broadcast?.getStringExtra("filename")).isEqualTo("clipshift.jpg")
+    }
+
+    @Test
+    fun `publishImage toasts when image is too large`() {
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
+        val shadows = Shadows.shadowOf(context as Application)
+
+        Config.save(context, topic = "test-topic", deviceName = "Test Device",
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh", maxAttachmentSizeMb = 1)
+
+        val uri = android.net.Uri.parse("content://me.jhot.clipshift.test/big.png")
+        val cursor = RoboCursor().apply {
+            setColumnNames(listOf(OpenableColumns.SIZE))
+            setResults(arrayOf(arrayOf(2L * 1024 * 1024)))  // 2 MB, over the 1 MB limit
+        }
+        Shadows.shadowOf(context.contentResolver).setCursor(uri, cursor)
+
+        PublishHelper.publishImage(uri, "png", context)
+
+        assertThat(shadows.broadcastIntents).isEmpty()
+        assertThat(ShadowToast.getTextOfLatestToast()).contains("too large")
+    }
+
+    @Test
+    fun `text attachment path blocks send when content exceeds max attachment size`() {
+        shadowPackageManager.installPackage(PackageInfo().apply { packageName = "io.heckel.ntfy" })
+        Config.save(context, topic = "test-topic", deviceName = "Test Device",
+            encryptionEnabled = false, baseUrl = "https://ntfy.sh", maxAttachmentSizeMb = 1)
+        val shadows = Shadows.shadowOf(context as Application)
+
+        // 2 MB of text — over the 1 MB limit
+        PublishHelper.publish("x".repeat(2 * 1024 * 1024), context)
+
+        assertThat(shadows.broadcastIntents).isEmpty()
+        assertThat(ShadowToast.getTextOfLatestToast())
+            .isEqualTo(context.getString(R.string.toast_content_too_large))
     }
 }
