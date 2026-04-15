@@ -27,13 +27,13 @@ object TagParser {
                 tag.startsWith("did:") -> deviceId = tag.removePrefix("did:")
                 tag.startsWith("type:") -> contentType = tag.removePrefix("type:")
                 tag.startsWith("ts:") -> timestamp = tag.removePrefix("ts:").toLongOrNull()
-                tag.startsWith("compression:") -> compression = when (tag.removePrefix("compression:")) {
+                tag.startsWith("compression:") -> compression = when (val algo = tag.removePrefix("compression:")) {
                     "gzip" -> CompressionAlgorithm.Gzip
                     "png"  -> CompressionAlgorithm.Png
                     "jpeg" -> CompressionAlgorithm.Jpeg
                     "webp" -> CompressionAlgorithm.WebP
                     "heic" -> CompressionAlgorithm.Heic
-                    else   -> CompressionAlgorithm.Unknown(tag.removePrefix("compression:"))
+                    else   -> CompressionAlgorithm.Unknown(algo)
                 }
             }
         }
