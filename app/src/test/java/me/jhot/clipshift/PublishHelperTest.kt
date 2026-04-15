@@ -201,6 +201,7 @@ class PublishHelperTest {
         assertThat(tags).contains("compression:png")
         assertThat(tags).doesNotContain("type:text")
         assertThat(broadcast?.getStringExtra("filename")).isEqualTo("clipshift.png")
+        assertThat(broadcast?.getStringExtra("file")).startsWith("content://")
     }
 
     @Test
@@ -245,6 +246,8 @@ class PublishHelperTest {
 
         assertThat(shadows.broadcastIntents).isEmpty()
         assertThat(ShadowToast.getTextOfLatestToast()).contains("too large")
+        val imageFiles = context.cacheDir.listFiles { f -> f.name.startsWith("clipshift_image_") }
+        assertThat(imageFiles).isEmpty()
     }
 
     @Test

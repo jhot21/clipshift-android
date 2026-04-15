@@ -76,6 +76,16 @@ object PublishHelper {
             return
         }
 
+        if (bytes.size.toLong() > maxBytes) {
+            val sizeMb = bytes.size.toLong() / (1024 * 1024)
+            Toast.makeText(
+                context,
+                context.getString(R.string.toast_image_too_large, sizeMb, cfg.maxAttachmentSizeMb),
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
         sendImageAttachmentMessage(bytes, compressionTag, cfg, context)
     }
 
