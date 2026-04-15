@@ -201,7 +201,8 @@ class PublishHelperTest {
         assertThat(tags).contains("compression:png")
         assertThat(tags).doesNotContain("type:text")
         assertThat(broadcast?.getStringExtra("filename")).isEqualTo("clipshift.png")
-        assertThat(broadcast?.getStringExtra("file")).startsWith("content://")
+        assertThat(broadcast?.getStringExtra("file_uri")).startsWith("content://")
+        assertThat(broadcast?.getStringExtra("message")).isEqualTo("clipshift")
     }
 
     @Test
