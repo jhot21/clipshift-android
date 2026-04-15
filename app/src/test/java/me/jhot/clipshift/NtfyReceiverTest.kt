@@ -321,7 +321,7 @@ class NtfyReceiverTest {
     @Test
     fun `attachment with unknown compression is skipped gracefully`() {
         val intent = makeAttachmentIntent(
-            tags = "v:1,did:other-device,type:text,ts:0,compression:png"
+            tags = "v:1,did:other-device,type:text,ts:0,compression:bmp"  // bmp is unknown
         )
         NtfyReceiver(
             executor = Runnable::run,
@@ -333,6 +333,82 @@ class NtfyReceiverTest {
             n.actions?.any { it.title?.toString() == context.getString(R.string.action_set_clipboard) } == true
         }
         assertThat(hasSetClipAction).isFalse()
+    }
+
+    @Test
+    fun `image attachment posts Share Image action in notification`() {
+        val intent = makeAttachmentIntent(
+            tags = "v:1,did:other-device,type:image,ts:0,compression:png"
+        )
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> throw AssertionError("should not download") },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notification = shadowOf(nm).allNotifications.last()
+        val shareAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_share_image)
+        }
+        assertThat(shareAction).isNotNull()
+    }
+
+    @Test
+    fun `image attachment does not post Set Clipboard action`() {
+        val intent = makeAttachmentIntent(
+            tags = "v:1,did:other-device,type:image,ts:0,compression:jpeg"
+        )
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> throw AssertionError("should not download") },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notification = shadowOf(nm).allNotifications.last()
+        val setClipAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_set_clipboard)
+        }
+        assertThat(setClipAction).isNull()
+    }
+
+    @Test
+    fun `image attachment intent extras contain url encrypted and compression`() {
+        val intent = makeAttachmentIntent(
+            attachmentUrl = "https://ntfy.sh/attach/img123",
+            tags = "v:1,did:other-device,type:image,ts:0,compression:png,encrypted"
+        )
+        NtfyReceiver(
+            executor = Runnable::run,
+            httpFetcher = { _ -> throw AssertionError("should not download") },
+        ).onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notification = shadowOf(nm).allNotifications.last()
+        val shareAction = notification.actions?.firstOrNull {
+            it.title?.toString() == context.getString(R.string.action_share_image)
+        }
+        assertThat(shareAction).isNotNull()
+        val saved = shadowOf(shareAction!!.actionIntent).savedIntent
+        assertThat(saved.getStringExtra(EXTRA_ATTACHMENT_URL)).isEqualTo("https://ntfy.sh/attach/img123")
+        assertThat(saved.getBooleanExtra(EXTRA_ENCRYPTED, false)).isTrue()
+        assertThat(saved.getStringExtra(EXTRA_COMPRESSION)).isEqualTo("png")
+    }
+
+    @Test
+    fun `image message without attachment url posts error notification`() {
+        val intent = Intent("io.heckel.ntfy.MESSAGE_RECEIVED").apply {
+            putExtra("topic", "test-topic")
+            putExtra("title", "Desktop")
+            putExtra("message", "clipshift")
+            putExtra("tags", "v:1,did:other-device,type:image,ts:0,compression:png")
+            // no attachment_url
+        }
+        NtfyReceiver().onReceive(context, intent)
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val notification = shadowOf(nm).allNotifications.last()
+        assertThat(notification.extras.getString("android.text"))
+            .contains(context.getString(R.string.notification_error_no_attachment))
     }
 
     @Test

@@ -32,30 +32,34 @@ class NtfyReceiver(
     override fun onReceive(context: Context, intent: Intent) {
         val cfg = Config.load(context)
 
-        // 1. Topic must be configured and match
         if (cfg.topic.isBlank()) return
         val msgTopic = intent.getStringExtra("topic") ?: return
         if (msgTopic != cfg.topic) return
 
-        // 2. Base URL must match if present (null means older ntfy — allow)
         val msgBaseUrl = intent.getStringExtra("base_url")
         if (msgBaseUrl != null && msgBaseUrl != cfg.baseUrl) return
 
-        // 3. Parse tags
         val tagString = intent.getStringExtra("tags") ?: ""
         val tags = TagParser.parse(tagString)
 
-        // 4. Version check
         if (tags.version != null && tags.version > 1) return
-
-        // 5. Dedup — skip own messages
         if (tags.deviceId == cfg.deviceId) return
 
         val senderName = intent.getStringExtra("title") ?: "unknown"
         val attachmentUrl = intent.getStringExtra("attachment_url")?.takeIf { it.isNotBlank() }
 
+        // Image content type: never download here — post notification for on-demand download
+        if (tags.contentType == "image") {
+            if (attachmentUrl == null) {
+                NotificationHelper.update(context, context.getString(R.string.notification_error_no_attachment))
+                return
+            }
+            postImageNotification(context, senderName, attachmentUrl, tags.encrypted, tags.compression)
+            return
+        }
+
         if (attachmentUrl != null) {
-            // Attachment path — always async (download may be slow)
+            // Text attachment path — download, decrypt, decompress
             val pendingResult = goAsync()
             executor.execute {
                 try {
@@ -76,7 +80,7 @@ class NtfyReceiver(
                         CompressionAlgorithm.Jpeg,
                         CompressionAlgorithm.WebP,
                         CompressionAlgorithm.Heic -> {
-                            Log.d(TAG, "Image compression not yet handled: $comp")
+                            Log.d(TAG, "Image compression on text path; skipping")
                             return@execute
                         }
                         is CompressionAlgorithm.Unknown -> {
@@ -86,9 +90,8 @@ class NtfyReceiver(
                         null -> decrypted
                     }
 
-                    // Content-type dispatch — extension point for future types (image, etc.)
                     when (tags.contentType) {
-                        "text" -> postNotification(context, senderName, String(decompressed, Charsets.UTF_8))
+                        "text" -> postTextNotification(context, senderName, String(decompressed, Charsets.UTF_8))
                         else   -> Log.d(TAG, "Unsupported content type: ${tags.contentType}")
                     }
                 } catch (e: IOException) {
@@ -103,14 +106,10 @@ class NtfyReceiver(
             return
         }
 
-        // Body path
-        // 6. Content type check (body path only)
+        // Body path (text only)
         if (tags.contentType != null && tags.contentType != "text") return
-
-        // 7. Get content
         val rawContent = intent.getStringExtra("message") ?: return
 
-        // 8. Decrypt if needed — Argon2id is expensive; dispatch off the main thread
         if (tags.encrypted) {
             val pendingResult = goAsync()
             executor.execute {
@@ -126,7 +125,7 @@ class NtfyReceiver(
                         NotificationHelper.update(context, context.getString(R.string.notification_error_passphrase))
                         return@execute
                     }
-                    postNotification(context, senderName, decrypted)
+                    postTextNotification(context, senderName, decrypted)
                 } finally {
                     pendingResult.finish()
                 }
@@ -134,13 +133,35 @@ class NtfyReceiver(
             return
         }
 
-        // 9. Non-encrypted body path — synchronous, fast
-        postNotification(context, senderName, rawContent)
+        postTextNotification(context, senderName, rawContent)
     }
 
-    private fun postNotification(context: Context, senderName: String, content: String) {
+    private fun postTextNotification(context: Context, senderName: String, content: String) {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val statusText = context.getString(R.string.notification_received_from, senderName, time)
         NotificationHelper.update(context, statusText, pendingClipText = content)
+    }
+
+    private fun postImageNotification(
+        context: Context,
+        senderName: String,
+        attachmentUrl: String,
+        encrypted: Boolean,
+        compression: CompressionAlgorithm?,
+    ) {
+        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val statusText = context.getString(R.string.notification_received_image_from, senderName, time)
+        val compressionTag = when (compression) {
+            CompressionAlgorithm.Png  -> "png"
+            CompressionAlgorithm.Jpeg -> "jpeg"
+            CompressionAlgorithm.WebP -> "webp"
+            CompressionAlgorithm.Heic -> "heic"
+            else -> "png"
+        }
+        NotificationHelper.update(
+            context,
+            statusText,
+            pendingImageData = PendingImageData(attachmentUrl, encrypted, compressionTag),
+        )
     }
 }
