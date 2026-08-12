@@ -10,7 +10,12 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 private const val COMPRESS_THRESHOLD = 3072
-private val NTFY_PACKAGES = listOf("io.heckel.ntfy", "io.heckel.ntfy.debug")
+private val NTFY_PACKAGES = listOf(
+    "me.jhot.jntfy",
+    "me.jhot.jntfy.debug",
+    "io.heckel.ntfy",
+    "io.heckel.ntfy.debug",
+)
 
 object PublishHelper {
 

@@ -10,6 +10,8 @@
     <queries>
         <package android:name="io.heckel.ntfy" />
         <package android:name="io.heckel.ntfy.debug" />
+        <package android:name="me.jhot.jntfy" />
+        <package android:name="me.jhot.jntfy.debug" />
     </queries>
 
     <application
