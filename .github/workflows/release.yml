@@ -68,9 +68,6 @@ jobs:
       - name: Lint + unit tests
         run: task --yes check
 
-      - name: Build debug APK
-        run: task --yes build
-
       - name: Decode keystore
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/clipshift-release-key.jks"
         env:
@@ -83,6 +80,9 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Build debug APK
+        run: task --yes build
 
       - name: Verify signature
         run: |
